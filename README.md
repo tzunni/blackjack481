@@ -15,7 +15,7 @@ This is our group's implementation of Blackjack with a dealer and an AI that cou
   - **User Interface Developer** (Create the frontend interface using PyGame, including the buttons, game status displays, interaction panels and maybe add real time updates with count display)
   - **AI Integration Lead** (Ensure communication between the AI agent and the game logic, connecting the UI actions to the AI’s responses)
 
-# Goal:
+## Goal:
 - Our goal is to create an AI agent that has a competitive advantage over the dealer using card counting. This will be implemented using a form of the Alpha Beta Minimax algorithm.
 - If we can manage it, we will try to...
   - extend the algorithm to work on custom decks, such as incomplete decks, and stacked odds decks

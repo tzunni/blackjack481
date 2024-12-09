@@ -466,13 +466,13 @@ def resetStats():
 
 # function displays the final scores of the game
 def finalRecords():
-    global records, score_text, round
+    global records, score_text, round, player
     pygame.init()
     pygame.display.set_caption("Game Over")
     global players, dealer, records
     screen = pygame.display.set_mode((screenWidth, screenHeight))
     screen.fill(green)
-    add_text("Your Game Stats:", text_Title, screen, 600, 200, black)
+    add_text(player.name + " Game Stats:", text_Title, screen, 600, 200, black)
     add_text("Rounds Completed: " + str(round), text_SubHeading, screen, 600, 350, white)
     add_text(score_text, text_SubHeading, screen, 600, 430, white)
     add_text("Press 'L' to LEAVE the game", text_SubHeading, screen, 600, 550, orange)

@@ -1,30 +1,46 @@
 import random
 
+class Card:
+    def __init__(self, suit, color, label, value):
+        self.suit = suit
+        self.color = color
+        self.label = label
+        self.value = value
+
+
 class Deck:
-  def __init__(self, card_file = 'cards.txt'):
-    """
-    Initialize the deck using a card file
-    - card_file (str): The name of the file containing the card list (cards.txt)
-    """
-    self.card_file = card_file
-    self.cards = self.initialize_deck()
+  def __init__(self):
+    self.cards = []
     self.discarded = []
 
-  def initialize_deck(self):
-    """
-    Initialize the deck of cards from the specified card file.
-    Reads the card file & creates a deck of cards by splitting them into a list.
-    If the file cannot be found, a FileNotFoundError will be raised.
+  # this method simply creates a deck using the Card class above
+  def create_deck(self):
+      suits = ["Clover", "Spade", "Heart", "Diamond"]
+      for symbol in suits:
+          number = 2
+          while number < 15:
+              if symbol == "Clover" or symbol == "Spade":
+                  suitColor = "Black"
+              else:
+                  suitColor = "Red"
+              value = number
+              if number > 10:
+                  value = 10
+              if number == 14:
+                  value = 1
+              letter = number
+              if number == 11:
+                  letter = "J"
+              elif number == 12:
+                  letter = "Q"
+              elif number == 13:
+                  letter = "K"
+              elif number == 14:
+                  letter = "A"
+              newCard = Card(symbol, suitColor, letter, value)
+              self.cards.append(newCard)
+              number += 1
 
-    Returns: A list of card strings (e.g., ["1H", "2D", "JC"])
-    """
-    try:
-      with open(self.card_file, "r") as file:
-        # returns a list of card strings from the file
-        return [card.strip() for card in file.read().split(",")]
-    except FileNotFoundError:
-      # raise error if the card file cannot be found
-      raise FileNotFoundError("Card file cards.txt not found.")
 
   def shuffle_deck(self):
     """
@@ -46,25 +62,6 @@ class Deck:
     # returns the dealt card (top card)
     return self.cards.pop()
 
-  def card_values(self, card):
-    """
-    Get the value of a card based on its rank.
-
-    This function extracts the rank of the card & returns the corresponding card value.
-    For face cards (Jack, Queen, King), it returns 10.
-    For Ace, it returns 11. For other cards, it returns the numeric value.
-
-    - card (str): The card string (e.g., "1H", "JS", "KD")
-    Returns: (int) The value of the card (10 for "JH", 11 for "AS")
-    """
-    rank = card[:-1]
-
-    if rank in ['X','J', 'Q', 'K']:
-      return 10
-    elif rank in ['A']:
-      return 11
-    else:
-      return int(rank)
 
   def calculate_hand_value(self, hand):
     """
@@ -78,10 +75,9 @@ class Deck:
 
     # Calculate the total value & count Aces
     for card in hand:
-      value = self.card_values(card)
-      if value == 11:
+      if self.value == 11:
         aces += 1
-      total += value
+      total += self.value
 
     # Special handling for Aces , when the total exceeds 21
     while total > 21 and aces > 0:
@@ -105,5 +101,5 @@ class Deck:
 
     This function reinitializes the deck from the card file and shuffles it to restore the deck to randomized state.
     """
-    self.cards = self.initialize_deck
+    self.cards = self.load_deck
     self.shuffle_deck

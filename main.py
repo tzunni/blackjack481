@@ -130,6 +130,9 @@ class Dealer:
         nameX = self.x
         nameY = self.y + (0.75 * cardHeight)
         add_text("DEALER", text_Normal, surface, nameX, nameY, white)
+        countString1 = ""
+        countString1 +=  "Count: " + str(self.hand[0].value)
+        add_text(countString1, text_Normal, surface, self.x + (0.20 * playerTopLeftX), self.y - 5, orange)
         deckX = 400 - (0.5 * cardWidth)
         deckY = 100 - (0.5 * cardHeight)
         for card in range(1, 7):
@@ -148,8 +151,6 @@ class Player:
         self.count = 0
         self.blackjack = False
         self.bust = False
-        self.bank = 100
-        self.bet = 0
         self.roundsWon = 0
         self.x = 0
         self.y = 0
@@ -167,7 +168,7 @@ class Player:
                 if event.type == KEYDOWN and event.key == K_h:
                     inp = 1
                     answered = True
-                if event.type == KEYDOWN and event.key == K_p:
+                if event.type == KEYDOWN and event.key == K_s:
                     inp = 2
                     answered = True
         return inp
@@ -189,20 +190,6 @@ class Player:
     def printCount(self):
         print("")
         print(str(self.name) + "'s Count: " + str(self.count))
-
-    # this method will apply the outcome of the bet to the bank
-    # no negative parameter will ever need to passed as we have already subtracted the bet from the bank
-    def applyBet(self, factor):
-        self.bank += self.bet * factor
-
-    # this method that will reset the bets
-    def resetBet(self):
-        self.bet = 0
-
-    # this method prints the player's bank
-    def printBank(self):
-        print("")
-        print(str(self.name) + "'s Bank: " + str(self.bank))
 
     # this method resets the player's hand
     def resetHandAndCount(self):
@@ -238,29 +225,28 @@ class Player:
         nameY = self.y + (0.75 * cardHeight)
         nameColor = white
         if self.currentTurn:
+            countString1 = ""
+            countString1 +=  "Count: " + str(player.count)
+            add_text(countString1, text_Normal, surface, self.x + (0.20 * playerTopLeftX), self.y - 5, orange)
             nameColor = blue
-            add_text("Hit(H) or Pass(P)", text_Normal, surface, self.x, self.y - (0.75 * cardHeight), nameColor)
+            add_text("Hit(H) or Stand(S)", text_Normal, surface, self.x, self.y - (0.75 * cardHeight), nameColor)
         if self.bust:
             bust = pygame.image.load("Resources/Icons/Bust.png")
             bustWidth = bust.get_width()
             bustHeight = bust.get_height()
             surface.blit(bust, (self.x - (0.5 * bustWidth), self.y - (0.5 * bustHeight)))
         if self.blackjack:
-            blackjack = pygame.image.load("Resources/Icons/blackjack.png")
-            bjWidth = blackjack.get_width()
-            bjHeight = blackjack.get_height()
-            surface.blit(blackjack, (self.x - (0.5 * bjWidth), self.y - (0.5 * bjHeight)))
-        add_text(str(self.name) + "   $" + str(self.bank), text_Normal, surface, nameX, nameY, nameColor)
+            blackjack = "Blackjack"
+            add_text(blackjack, text_Title, surface, self.x - 5, self.y - 5, black)
+        add_text(str(self.name), text_Normal, surface, nameX, nameY, nameColor)
 
     # function to reset everything for the next round
     def resetState(self):
         self.bust = False
         self.blackjack = False
-        self.resetBet()
         self.resetHandAndCount()
 
 
-# officially the end of all our class initializations and methods
 
 
 # below consists the py-game/graphics related code
@@ -269,11 +255,8 @@ pygame.init()
 pygame.font.init()
 screenWidth, screenHeight = 1250, 750
 halfWidth, halfHeight = screenWidth / 2, screenHeight / 2
-pokerBackgroundOriginal = pygame.image.load("Resources/StartScreenBackground.png")
-pokerBackgroundGame = pygame.image.load("Resources/pokerBackground.png")
-pokerGreen = pygame.transform.scale(pokerBackgroundOriginal, (screenWidth, screenHeight))
-pokerGreen2 = pygame.transform.scale(pokerBackgroundGame, (screenWidth, screenHeight))
-black, blue, white, orange, red = (0, 0, 0), (51, 235, 255), (255, 255, 255), (255, 165, 0), (255, 0, 0)
+
+black, blue, white, orange, red , green = (0, 0, 0), (51, 235, 255), (255, 255, 255), (255, 165, 0), (255, 0, 0), (34, 139, 34)
 fontType = 'Poppins'
 text_Title = pygame.font.SysFont(fontType, 80)
 text_Heading = pygame.font.SysFont(fontType, 60)
@@ -283,10 +266,13 @@ text_Normal = pygame.font.SysFont(fontType, 20)
 text_Small = pygame.font.SysFont(fontType, 10)
 
 # global variables listed below
-players = []
-numPlayers = 0
+player = Player("AI Agent Minimax")
 dealer = Dealer()
 startY = 50
+round = 0
+# win, loss, draw/push
+records = [0, 0, 0]
+score_text = f'Wins: {records[0]}   Losses: {records[1]}   Draws: {records[2]}'
 
 
 # function to add text to the game when needed
@@ -301,11 +287,8 @@ def startGame():
     pygame.init()
     screen = pygame.display.set_mode((screenWidth, screenHeight))
     pygame.display.set_caption("Welcome")
-    screen.blit(pokerGreen, (0, 0))
-    titleLogo = pygame.image.load("Resources/Icons/BlackJack.png")
-    logoX = titleLogo.get_width()
-    logoY = titleLogo.get_height()
-    screen.blit(titleLogo, (halfWidth - (0.5 * logoX), halfHeight - (0.5 * logoY) - 25))
+    screen.fill(green)
+    add_text("Blackjack Minimax", text_Heading, screen, halfWidth, halfHeight, black)
     add_text("PRESS SPACE TO CONTINUE", text_SubHeading, screen, halfWidth, halfHeight + 100, white)
     pygame.display.update()
     beginning = True
@@ -317,202 +300,11 @@ def startGame():
             if event.type == KEYDOWN and event.key == K_SPACE:
                 beginning = False
 
-# function to show the reader all of the instructions and rules to our game
-def showInstructions():
-    pygame.init()
-    screen = pygame.display.set_mode((screenWidth, screenHeight))
-    pygame.display.set_caption("How to Play")
-    screen.blit(pokerGreen2, (0, 0))
-    add_text("Goal of the Game:", text_SubHeading, screen, halfWidth, 50, orange)
-    add_text("--> To get the closest to 21 without going over in order for you to make money.", text_Normal, screen, halfWidth, 100, white)
-    add_text("Basic Rules:", text_SubHeading, screen, halfWidth, 150, orange)
-    add_text("--> Cards 2 - 10 = face value        Jack, Queen, King = 10        Ace = 1 or 11", text_Normal, screen, halfWidth, 200, white)
-    add_text("--> Press H to Hit (Gets a card)        Press P to Pass (Finishes turn)", text_Normal, screen, halfWidth, 250, white)
-    add_text("--> You may hit as much as you want, however, once you pass 21, you bust and your turn is over.", text_Normal, screen, halfWidth, 300, white)
-    add_text("--> If you get to 21 with your first two cards, you blackjack, and you sit out for that round.", text_Normal, screen, halfWidth, 350, white)
-    add_text("Betting:", text_SubHeading, screen, halfWidth, 400, orange)
-    add_text("--> Everyone has $100 to start the game.", text_Normal, screen, halfWidth, 450, white)
-    add_text("--> Be careful, because you can go bankrupt, however the game will always supply you with at least a dollar to play.", text_Normal, screen, halfWidth, 500, white)
-    add_text("--> Bust = Dealer takes your bet        Blackjack = Earn 1 and a half times your bet", text_Normal, screen, halfWidth, 550, white)
-    add_text("--> Closest to 21 = Earn 2 times your bet, else Dealer takes your bet", text_Normal, screen, halfWidth, 600, white)
-    add_text("--> If your count is equal to the dealer's and it is the highest count under 21, you get your bet back", text_Normal, screen, halfWidth, 650, white)
-    add_text("--> Dealer Bust = Everyone remaining in the game earns 2 times their bets.", text_Normal, screen, halfWidth, 700, white)
-    pygame.display.update()
-    instructions = True
-    while instructions:
-        for event in pygame.event.get():
-            if event.type == QUIT or (event.type == KEYDOWN and event.key == K_ESCAPE):
-                pygame.quit()
-                sys.exit()
-            if event.type == KEYDOWN and event.key == K_SPACE:
-                instructions = False
-
-# function to receive the number of players
-def getNumberOfPlayers():
-    global numPlayers
-    pygame.init()
-    screen = pygame.display.set_mode((screenWidth, screenHeight))
-    pygame.display.set_caption("Enter Players")
-    validNumbers = "23456"
-    userString = ""
-    answered = False
-    while answered is False:
-        screen.blit(pokerGreen2, (0, 0))
-        add_text("Enter the number of players playing below (Game is designed for 2-6 players):", text_Bold, screen, halfWidth, halfHeight - 50, orange)
-        add_text(userString, text_SubHeading, screen, halfWidth, halfHeight, white)
-        add_text("PRESS SPACE TO CONTINUE", text_Bold, screen, halfWidth, halfHeight + 50, orange)
-        pygame.display.update()
-        for event in pygame.event.get():
-            if event.type == QUIT or (event.type == KEYDOWN and event.key == K_ESCAPE):
-                pygame.quit()
-                sys.exit()
-            if event.type == KEYDOWN and (pygame.key.name(event.key) in validNumbers) and len(userString) < 1:
-                userString += str(pygame.key.name(event.key))
-            if event.type == KEYDOWN and event.key == K_BACKSPACE:
-                userString = ""
-            if event.type == KEYDOWN and event.key == K_SPACE and len(userString) == 1:
-                numPlayers = int(userString)
-                answered = True
-
-# function to receive the names of all the players
-def getPlayerNames():
-    global players, numPlayers
-    pygame.init()
-    screen = pygame.display.set_mode((screenWidth, screenHeight))
-    pygame.display.set_caption("Enter Names")
-    validCharacters = "abcdefghijklmnopqrstuvwxyz1234567890"
-    allNames = False
-    while allNames is False:
-        for player in range(1, numPlayers + 1):
-            userString = ""
-            singleName = False
-            while singleName is False:
-                screen.blit(pokerGreen2, (0, 0))
-                add_text("Enter player " + str(player) + "'s name:", text_Bold, screen, halfWidth, halfHeight - 50, orange)
-                add_text(userString, text_SubHeading, screen, halfWidth, halfHeight, white)
-                if player < numPlayers:
-                    add_text("PRESS SPACE TO ADD NAME", text_Bold, screen, halfWidth, halfHeight + 50, orange)
-                elif player == numPlayers:
-                    add_text("PRESS SPACE TO CONTINUE", text_Bold, screen, halfWidth, halfHeight + 50, orange)
-                pygame.display.update()
-                for event in pygame.event.get():
-                    if event.type == QUIT or (event.type == KEYDOWN and event.key == K_ESCAPE):
-                        pygame.quit()
-                        sys.exit()
-                    if event.type == KEYDOWN and (pygame.key.name(event.key) in validCharacters) and len(userString) < 9:
-                        userString += str(pygame.key.name(event.key))
-                    if event.type == KEYDOWN and event.key == K_BACKSPACE:
-                        userString = ""
-                    if event.type == KEYDOWN and event.key == K_SPACE:
-                        players.append(Player(userString))
-                        singleName = True
-                        if player == numPlayers:
-                            allNames = True
-
 # function that sets the x and y coordinates of every player plus the dealer
 def fixCoordinates():
-    global players, dealer, numPlayers
-    if numPlayers == 1:
-        players[0].x = halfWidth
-        players[0].y = 650
-    elif numPlayers == 2:
-        players[0].x = 850
-        players[0].y = halfHeight + 150
-        players[1].x = 400
-        players[1].y = halfHeight + 150
-    elif numPlayers == 3:
-        players[0].x = 1000
-        players[0].y = halfHeight
-        players[1].x = halfWidth
-        players[1].y = 625
-        players[2].x = 250
-        players[2].y = halfHeight
-    elif numPlayers == 4:
-        players[0].x = 1050
-        players[0].y = halfHeight
-        players[1].x = halfWidth + 200
-        players[1].y = 625
-        players[2].x = halfWidth - 200
-        players[2].y = 625
-        players[3].x = 200
-        players[3].y = halfHeight
-    elif numPlayers == 5:
-        players[0].x = 1100
-        players[0].y = halfHeight - 50
-        players[1].x = halfWidth + 300
-        players[1].y = 525
-        players[2].x = halfWidth
-        players[2].y = 625
-        players[3].x = halfWidth - 300
-        players[3].y = 525
-        players[4].x = 150
-        players[4].y = halfHeight - 50
-    elif numPlayers == 6:
-        players[0].x = 1100
-        players[0].y = halfHeight - 170
-        players[1].x = halfWidth + 350
-        players[1].y = 415
-        players[2].x = halfWidth + 175
-        players[2].y = 625
-        players[3].x = halfWidth - 175
-        players[3].y = 625
-        players[4].x = halfWidth - 350
-        players[4].y = 415
-        players[5].x = 150
-        players[5].y = halfHeight - 170
-
-# function to collect the bets of all the players every round
-def getPlayerBets():
-    # for player in players:
-    #     player.createBet()
-    # for player in players:
-    #     player.bet = 5
-    #     player.applyBet(-1)
-    global players, numPlayers
-    pygame.init()
-    screen = pygame.display.set_mode((screenWidth, screenHeight))
-    pygame.display.set_caption("Enter Bets")
-    validNumbers = "1234567890"
-    allBets = False
-    while allBets is False:
-        for player in players:
-            if player.bank == 0:
-                player.bank += 1
-            validBet = True
-            userString = ""
-            singleBet = False
-            while singleBet is False:
-                screen.blit(pokerGreen2, (0, 0))
-                add_text("Enter " + str(player.name) + "'s bet (" + str(player.name) + "'s Bank = $" + str(player.bank) + "):", text_Bold, screen, halfWidth, halfHeight - 50,
-                         orange)
-                add_text(userString, text_SubHeading, screen, halfWidth, halfHeight, white)
-                if player is not players[len(players) - 1]:
-                    add_text("PRESS SPACE TO CONTINUE", text_Bold, screen, halfWidth, halfHeight + 50, orange)
-                else:
-                    add_text("PRESS SPACE TO START GAME", text_Bold, screen, halfWidth, halfHeight + 50, orange)
-                if validBet is False:
-                    add_text("ENTER A VALID BET", text_Bold, screen, halfWidth, halfHeight + 100, red)
-                pygame.display.update()
-                for event in pygame.event.get():
-                    if event.type == QUIT or (event.type == KEYDOWN and event.key == K_ESCAPE):
-                        pygame.quit()
-                        sys.exit()
-                    if event.type == KEYDOWN and (pygame.key.name(event.key) in validNumbers) and len(
-                            userString) < 4:
-                        userString += str(pygame.key.name(event.key))
-                    if event.type == KEYDOWN and event.key == K_BACKSPACE:
-                        userString = ""
-                    if event.type == KEYDOWN and event.key == K_SPACE:
-                        if userString == "":
-                            userString = "0"
-                        if 0 <= int(userString) <= player.bank:
-                            singleBet = True
-                            player.bet = int(userString)
-                            player.applyBet(-1)
-                        if int(userString) > player.bank:
-                            validBet = False
-                        if singleBet is True and player == players[len(players) - 1]:
-                            allBets = True
+    global player, dealer
+    player.x = halfWidth
+    player.y = 650
 
 # function to restore all the cards to the deck for a new round
 def newDeck():
@@ -524,246 +316,183 @@ def createHands():
     global dealer
     dealer.createDealerHand()
     for i in range(1, 3):
-        for player in players:
-            card = dealer.dealCard()
-            player.addCard(card)
+      card = dealer.dealCard()
+      player.addCard(card)
 
 # function to check for blackjacks (basically when the first two initial cards dealt to a player add up to 21)
 # if there is one you automatically win one and a half times your bet, and you sit out for the round
 def checkBlackJack():
-    for player in players:
-        if player.count == 21:
-            print("")
-            print(player.name + ", you got a BLACKJACK & won one and a half times your bet.")
-            player.applyBet(3/2)
-            player.resetBet()
-            player.blackjack = True
+  if player.count == 21:
+    print("")
+    print(player.name + ", you got a BLACKJACK !")
+    player.blackjack = True
 
 # function to run the turns of all players, basically allowing to hit and pass as normal
 # this function also contains the code for changing the value of an ace when necessary
 def playTurns():
+    global player, round, score_text
+    round += 1
     pygame.init()
     screen = pygame.display.set_mode((screenWidth, screenHeight))
-    pygame.display.set_caption("Play Round")
-    turn = 0
-    while turn < len(players):
-        currentPlayer = players[turn]
-        if currentPlayer.blackjack:
-            turn += 1
-            if turn >= len(players):
-                break
-            currentPlayer = players[turn]
-        for player in players:
-            player.currentTurn = False
-            if player == currentPlayer:
-                player.currentTurn = True
-        currentPlayer.printHand()
+    pygame.display.set_caption("Play Round " + str(round))
+    player.currentTurn = True
+    player.printHand()
+    drawTurn(screen)
+    if player.blackjack is True:
+        score_text = ''
+        add_text(score_text, text_SubHeading, screen, 240, 730, white)
         drawTurn(screen)
-        choice = currentPlayer.askChoice()
-        if choice == 1:
-            keepHitting = True
-            while keepHitting is True:
-                hitCard = dealer.dealCard()
-                currentPlayer.addCard(hitCard)
-                drawTurn(screen)
-                currentPlayer.printHand()
-                if currentPlayer.count > 21:
-                    print("")
-                    print(str(currentPlayer.name) + ", you busted. The Dealer gets your bet.")
-                    currentPlayer.bust = True
-                    currentPlayer.resetBet()
-                    break
-                choice = currentPlayer.askChoice()
-                if choice != 1:
-                    keepHitting = False
-        turn += 1
+        showEndRoundScreen(screen)
+    else:
+      choice = player.askChoice()
+      if choice == 1:
+        keepHitting = True
+        while keepHitting is True:
+          hitCard = dealer.dealCard()
+          player.addCard(hitCard)
+          drawTurn(screen)
+          player.printHand()
+          if player.count == 21:
+            print("")
+            print(str(player.name) + " got a blackjack!")
+            player.blackjack = True
+            break
+          if player.count > 21:
+            print("")
+            print(str(player.name) + ", you busted.")
+            player.bust = True
+            break
+          choice = player.askChoice()
+          if choice != 1:
+            keepHitting = False
+      score_text = ''
+      add_text(score_text, text_SubHeading, screen, 240, 730, white)
+      drawTurn(screen)
+      showEndRoundScreen(screen)
 
 # function to draw the screen every time an action is conducted in the playing of the game
 def drawTurn(surface):
-    global players, dealer
-    surface.blit(pokerGreen2, (0, 0))
+    global player, dealer, records, score_text
+    screen = pygame.display.set_mode((screenWidth, screenHeight))
+    screen.fill(green)
     dealer.drawHand(surface)
-    for player in players:
-        player.drawHand(surface)
-    # tigerEye = pygame.image.load("Resources/Icons/tigerEye.png")
-    # tigerX = round(tigerEye.get_width() * 0.5)
-    # tigerY = round(tigerEye.get_height() * 0.5)
-    # tigerEye = pygame.transform.scale(tigerEye, (tigerX, tigerY))
-    # tigerEye.set_alpha(10)
-    # surface.blit(tigerEye, (halfWidth - (0.5 * tigerX), halfHeight - (0.5 * tigerY)))
+    player.drawHand(surface)
+    add_text("Round " + str(round), text_Normal, surface, 50, 20, white)
+    add_text(score_text, text_SubHeading, surface, 240, 730, white)
     pygame.display.update()
 
 # function to reveal the face down card of the dealer, and if the dealer has to force hit he will do so
 def revealDealerHand(surface):
-    global dealer, startY
+    global dealer, startY, player
     dealerBust = False
     while dealer.count <= 16:
         dealer.addCard()
-    if dealer.count > 21:
+    if dealer.count > 21 and player.count <= 21:
         print("")
-        print("The Dealer busted. You all got double your bets.")
-        startY += 50
-        add_text("The Dealer busted. You all got double your bets.", text_Normal, surface, halfWidth, startY, white)
-        for player in players:
-            if player.bet > 0:
-                player.applyBet(2)
+        print("The Dealer busted. YOU WON!")
+        add_text("The Dealer busted. YOU WON!", text_Normal, surface, halfWidth, 350, white)
+        records[0] += 1
         dealerBust = True
     dealer.printDealerHand()
     dealer.printDealerCount()
+    if player.blackjack:
+          add_text(str(player.name) + " got a blackjack!", text_Normal, surface, halfWidth, 370, white)
     return dealerBust
 
 # function to see how the bets are retrieved based on counts
 def compareCounts(surface):
-    global players, dealer, startY
+    global player, dealer, startY, records
     noCounts = True
     highestCount = 0
-    for player in players:
-        if 21 >= player.count > highestCount:
-            highestCount = player.count
-            noCounts = False
+    if 21 >= player.count > highestCount:
+      highestCount = player.count
+      noCounts = False
     if noCounts is False:
-        for player in players:
-            if player.count == highestCount and highestCount > dealer.count and player.blackjack is False:
-                print("")
-                print(str(player.name) + ", you won twice your bet")
-                startY += 50
-                add_text(str(player.name) + ", you won twice your bet.", text_Normal, surface, halfWidth, startY, white)
-                player.applyBet(2)
-                player.resetBet()
-            elif player.count == dealer.count and player.blackjack is False:
-                print("")
-                print(str(player.name) + ", you got your bet back.")
-                startY += 50
-                add_text(str(player.name) + ", you got your bet back.", text_Normal, surface, halfWidth, startY, white)
-                player.applyBet(1)
-                player.resetBet()
-            elif player.count < dealer.count and player.blackjack is False:
-                print("")
-                print(str(player.name) + ", the dealer took your bet.")
-                startY += 50
-                add_text(str(player.name) + ", the dealer took your bet.", text_Normal, surface, halfWidth, startY, white)
-                player.resetBet()
-            elif player.bust:
-                startY += 50
-                add_text(str(player.name) + " busted.", text_Normal, surface, halfWidth, startY, white)
-            elif player.blackjack:
-                startY += 50
-                add_text(str(player.name) + " got a blackjack.", text_Normal, surface, halfWidth, startY, white)
-    else:
-        startY += 50
-        add_text("You all busted.", text_Normal, surface, halfWidth, startY, white)
-
-# function to check for a winner, basically when a person reaches a certain target amount of money
-def checkWinner(surface):
-    global roundOver, gameOver, startY
-    highestBank = 0
-    winnerPresent = False
-    for player in players:
-        if player.bank > highestBank and player.bank >= 200:
-            highestBank = player.bank
-            winnerPresent = True
-    if winnerPresent:
-        for player in players:
-            if player.bank == highestBank:
-                print("")
-                print(str(player.name) + ", YOU WON THE GAME.")
-                startY += 50
-                add_text(str(player.name) + ", YOU WON THE GAME.", text_Normal, surface, halfWidth, startY, blue)
-            roundOver = True
-        gameOver = True
+      if player.count == highestCount and highestCount > dealer.count:
+        print("")
+        print(str(player.name) + ", YOU WON!")
+        add_text(str(player.name) + ", YOU WON!", text_Normal, surface, halfWidth, 350, white)
+        records[0] += 1
+        if player.blackjack:
+          add_text(str(player.name) + " got a blackjack!", text_Normal, surface, halfWidth, 370, white)
+      elif player.count == dealer.count:
+        print("")
+        print("YOU TIED.")
+        add_text("YOU TIED.", text_Normal, surface, halfWidth, 350, white)
+        records[2] += 1
+        if player.blackjack:
+          add_text(str(player.name) + " got a blackjack!", text_Normal, surface, halfWidth, 370, white)
+      elif player.count < dealer.count and player.blackjack is False:
+        print("")
+        print("The Dealer won. YOU LOSE.")
+        add_text("The Dealer won. YOU LOSE.", text_Normal, surface, halfWidth, 350, white)
+        records[1] += 1
+    elif player.bust:
+      add_text(str(player.name) + " busted. YOU LOSE.", text_Normal, surface, halfWidth, 350, white)
+      records[1] += 1
 
 # function to display a message about the results of the previous round
-def showEndRoundScreen():
-    global startY, gameOver, numPlayers, players
+def showEndRoundScreen(surface):
+    global startY, gameOver, player, score_text
     pygame.init()
-    screen = pygame.display.set_mode((screenWidth, screenHeight))
     pygame.display.set_caption("Round Over")
-    screen.blit(pokerGreen2, (0, 0))
-    add_text("Results:", text_SubHeading, screen, halfWidth, startY, orange)
-    if revealDealerHand(screen) is False:
-        compareCounts(screen)
-    checkWinner(screen)
-    startY += 50
-    add_text("Dealer's Count: " + str(dealer.count), text_Normal, screen, halfWidth, startY, orange)
-    startY += 50
+    add_text("Results:", text_SubHeading, surface, halfWidth, 300, orange)
+    if revealDealerHand(surface) is False:
+        compareCounts(surface)
+    score_text = f'Wins: {records[0]}   Losses: {records[1]}   Draws: {records[2]}'
+    add_text(score_text, text_SubHeading, surface, 240, 730, white)
+    add_text("Dealer's Count: " + str(dealer.count), text_Normal, surface, halfWidth, 400, orange)
     countString1 = ""
-    for i in range(0, 3):
-        player = players[i]
-        if (numPlayers > 3 and player == players[2]) or player == players[numPlayers - 1]:
-            countString1 += str(player.name) + "'s Count: " + str(player.count)
-        else:
-            countString1 += str(player.name) + "'s Count: " + str(player.count) + "        "
-        if i == 1 and numPlayers == 2:
-            break
-    add_text(countString1, text_Normal, screen, halfWidth, startY, orange)
-    if numPlayers > 3:
-        startY += 50
-        countString2 = ""
-        for i in range(3, numPlayers):
-            player = players[i]
-            if player == players[numPlayers - 1]:
-                countString2 += str(player.name) + "'s Count: " + str(player.count)
-            else:
-                countString2 += str(player.name) + "'s Count: " + str(player.count) + "        "
-        add_text(countString2, text_Normal, screen, halfWidth, startY, orange)
-    bankString1 = ""
-    for i in range(0, 3):
-        player = players[i]
-        if (numPlayers > 3 and player == players[2]) or player == players[numPlayers - 1]:
-            bankString1 += str(player.name) + "'s Bank: $" + str(player.bank)
-        else:
-            bankString1 += str(player.name) + "'s Bank: $" + str(player.bank) + "        "
-        if i == 1 and numPlayers == 2:
-            break
-    add_text(bankString1, text_Normal, screen, halfWidth, 600, white)
-    if numPlayers > 3:
-        bankString2 = ""
-        for i in range(3, numPlayers):
-            player = players[i]
-            if player == players[numPlayers - 1]:
-                bankString2 += str(player.name) + "'s Bank: $" + str(player.bank)
-            else:
-                bankString2 += str(player.name) + "'s Bank: $" + str(player.bank) + "        "
-        add_text(bankString2, text_Normal, screen, halfWidth, 650, white)
-    if gameOver is True:
-        add_text("PRESS SPACE TO EXIT", text_SubHeading, screen, halfWidth, 700, orange)
-    else:
-        add_text("PRESS SPACE TO CONTINUE", text_SubHeading, screen, halfWidth, 700, orange)
+    countString1 += str(player.name) + "'s Count: " + str(player.count)
+    add_text(countString1, text_Normal, surface, halfWidth, 450, orange)
+
+    add_text("Press 'D' to DEAL or Press 'Q' to QUIT", text_SubHeading, surface, halfWidth, 500, orange)
     pygame.display.update()
     roundEnd = True
     while roundEnd:
         for event in pygame.event.get():
-            if event.type == QUIT or (event.type == KEYDOWN and event.key == K_ESCAPE):
-                pygame.quit()
-                sys.exit()
-            if event.type == KEYDOWN and event.key == K_SPACE:
+            if event.type == QUIT or (event.type == KEYDOWN and event.key == K_q):
+                score_text = f'Wins: {records[0]}   Losses: {records[1]}   Draws: {records[2]}'
+                finalRecords()
+            if event.type == KEYDOWN and event.key == K_d:
                 roundEnd = False
 
 # function to reset things such as the bets, and player hands for a new round (plus we need to reset the starting Y
 # value for all the text shown in the end of the round
 def resetStats():
-    global players, startY
-    for player in players:
-        player.printBank()
-        player.resetState()
+    global player, startY
+    player.resetState()
     startY = 100
 
+# function displays the final scores of the game
+def finalRecords():
+    global records, score_text, round
+    pygame.init()
+    pygame.display.set_caption("Game Over")
+    global players, dealer, records
+    screen = pygame.display.set_mode((screenWidth, screenHeight))
+    screen.fill(green)
+    add_text("Your Game Stats:", text_Title, screen, 600, 200, black)
+    add_text("Rounds Completed: " + str(round), text_SubHeading, screen, 600, 350, white)
+    add_text(score_text, text_SubHeading, screen, 600, 430, white)
+    add_text("Press 'L' to LEAVE the game", text_SubHeading, screen, 600, 550, orange)
+    pygame.display.update()
+    while True:
+      for event in pygame.event.get():
+        if event.type == QUIT or (event.type == KEYDOWN and event.key == K_l):
+          pygame.quit()
+          sys.exit()
 
 # main game loop starts here
 
 gameOver = False
 while gameOver is False:
     startGame()
-    showInstructions()
-    getNumberOfPlayers()
-    getPlayerNames()
     fixCoordinates()
     roundOver = False
     while roundOver is False:
-        getPlayerBets()
         newDeck()
         createHands()
         checkBlackJack()
         playTurns()
-        showEndRoundScreen()
         resetStats()

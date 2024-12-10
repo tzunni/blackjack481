@@ -4,7 +4,8 @@ import random
 import pygame
 from pygame.locals import *
 import sys
-
+from ai import AI
+from card_counter import CardCounter
 
 class Card:
 
@@ -55,21 +56,25 @@ class Deck:
         return random.shuffle(self.cards)
 
     # this method basically gets the top card of the deck and returns it
-    def getCard(self):
+    def getCard(self, card_counter=None):
         topCard = self.cards[0]
         self.cards.pop(0)
+        if card_counter:
+            # Update the card counter with the drawn card
+            card_counter.update_count(topCard.label + topCard.suit[0])  # Example: "AH" for Ace of Hearts
         return topCard
 
 
 class Dealer:
 
     # this class contains everything that is within the control of the dealer
-    def __init__(self):
+    def __init__(self, card_counter=None):
         self.deck = Deck()
         self.deck.createDeck()
         self.deck.shuffleDeck()
         self.hand = []
         self.count = 0
+        self.card_counter = card_counter  # Store the card_counter
         self.x = halfWidth
         self.y = 100
 
@@ -80,7 +85,7 @@ class Dealer:
 
     # this method uses the getCard() to deal a card to a player
     def dealCard(self):
-        return self.deck.getCard()
+        return self.deck.getCard(self.card_counter)
 
     # this method allows the dealer to deal himself a card and also account for the dealer's count
     def addCard(self):
@@ -145,7 +150,7 @@ class Dealer:
 class Player:
 
     # this class contains everything that is within the control of the player
-    def __init__(self, name):
+    def __init__(self, name, is_ai=False, ai_instance=None, card_counter=None):
         self.name = name
         self.hand = []
         self.count = 0
@@ -155,23 +160,34 @@ class Player:
         self.x = 0
         self.y = 0
         self.currentTurn = False
+        self.is_ai = is_ai  # Flag for AI-controlled player
+        self.ai = ai_instance
+        self.card_counter = card_counter
 
     # this method asks the player for their choice of action when it is their turn
     def askChoice(self):
-        inp = 0
-        answered = False
-        while answered is False:
-            for event in pygame.event.get():
-                if event.type == QUIT or (event.type == KEYDOWN and event.key == K_ESCAPE):
-                    pygame.quit()
-                    sys.exit()
-                if event.type == KEYDOWN and event.key == K_h:
-                    inp = 1
-                    answered = True
-                if event.type == KEYDOWN and event.key == K_s:
-                    inp = 2
-                    answered = True
-        return inp
+        if self.is_ai and self.ai:
+            dealer_hand_values = [card.value for card in dealer.hand]
+            remaining_cards = len(dealer.deck.cards)  # Use the count of remaining cards
+            decision = self.ai.decide_action(self.hand, dealer_hand_values, remaining_cards)
+            print(f"{self.name} (AI) chooses to {decision.upper()}")
+            return 1 if decision == "hit" else 2
+
+        else:
+            inp = 0
+            answered = False
+            while not answered:
+                for event in pygame.event.get():
+                    if event.type == QUIT or (event.type == KEYDOWN and event.key == K_ESCAPE):
+                        pygame.quit()
+                        sys.exit()
+                    if event.type == KEYDOWN and event.key == K_h:
+                        inp = 1
+                        answered = True
+                    if event.type == KEYDOWN and event.key == K_s:
+                        inp = 2
+                        answered = True
+            return inp
 
     # this method adds a card provided by the dealer to the player's hand
     def addCard(self, card):
@@ -256,6 +272,22 @@ pygame.font.init()
 screenWidth, screenHeight = 1250, 750
 halfWidth, halfHeight = screenWidth / 2, screenHeight / 2
 
+# Instantiate CardCounter
+card_counter = CardCounter()
+
+# Pass the card_counter to AI
+ai_instance = AI()
+ai_instance.set_card_counter(card_counter)
+
+# Modify player creation to include card counting
+player = Player("AI Agent Minimax", is_ai=True, ai_instance=ai_instance, card_counter=card_counter)
+
+# Instantiate Dealer with card_counter
+dealer = Dealer(card_counter=card_counter)
+
+remaining_cards = [card.value for card in dealer.deck.cards]
+
+
 black, blue, white, orange, red , green = (0, 0, 0), (51, 235, 255), (255, 255, 255), (255, 165, 0), (255, 0, 0), (34, 139, 34)
 fontType = 'Poppins'
 text_Title = pygame.font.SysFont(fontType, 80)
@@ -266,8 +298,7 @@ text_Normal = pygame.font.SysFont(fontType, 20)
 text_Small = pygame.font.SysFont(fontType, 10)
 
 # global variables listed below
-player = Player("AI Agent Minimax")
-dealer = Dealer()
+
 startY = 50
 round = 0
 # win, loss, draw/push

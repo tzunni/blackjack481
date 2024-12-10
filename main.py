@@ -453,39 +453,53 @@ def compareCounts(surface):
 
 # function to display a message about the results of the previous round
 def showEndRoundScreen(surface, last_decision):
-    global startY, gameOver, player, score_text
+    global player, dealer, ai_instance, score_text, records
+
     pygame.init()
     pygame.display.set_caption("Round Over")
-    add_text("Results:", text_SubHeading, surface, halfWidth, 300, orange)
-    if revealDealerHand(surface) is False:
-        compareCounts(surface)
+    surface.fill(black)
+
+    # Determine the outcome
+    if player.bust:
+        outcome = "Loss"
+        records[1] += 1
+    elif dealer.count > 21 or player.count > dealer.count:
+        outcome = "Win"
+        records[0] += 1
+    elif player.count == dealer.count:
+        outcome = "Tie"
+        records[2] += 1
+    else:
+        outcome = "Loss"
+        records[1] += 1
+
+    # Call flush_buffer_to_csv after determining the outcome
+    ai_instance.update_outcome_in_buffer(outcome)  # Update all actions in the buffer with the outcome
+    ai_instance.flush_buffer_to_csv(ai_instance.history_file)  # Write all buffered actions to the CSV file
+
+
+    # Update the win/loss/draw counter
     score_text = f'Wins: {records[0]}   Losses: {records[1]}   Draws: {records[2]}'
-    add_text(score_text, text_SubHeading, surface, 240, 730, white)
-    add_text("Dealer's Count: " + str(dealer.count), text_Normal, surface, halfWidth, 400, orange)
-    countString1 = ""
-    countString1 += str(player.name) + "'s Count: " + str(player.count)
-    add_text(countString1, text_Normal, surface, halfWidth, 450, orange)
 
-    # Add AI update
-    ai_instance.update_outcome_in_csv(
-        player.count,
-        dealer.hand[0].value if dealer.hand else 0,
-        last_decision,
-        outcome="Win" if player.count > dealer.count else "Loss" if player.count < dealer.count else "Tie"
-    )
+    # Display the outcome
+    add_text("Results:", text_SubHeading, surface, halfWidth, 300, orange)
+    add_text(f"Outcome: {outcome}", text_Normal, surface, halfWidth, 350, white)
 
+    # Display the win/loss/draw counter
+    add_text(score_text, text_SubHeading, surface, halfWidth, 400, white)
+
+    # Add prompt to continue or quit
     add_text("Press 'D' to DEAL or Press 'Q' to QUIT", text_SubHeading, surface, halfWidth, 500, orange)
     pygame.display.update()
-    roundEnd = True
-    while roundEnd:
+
+    # Wait for user input to continue or quit
+    while True:
         for event in pygame.event.get():
             if event.type == QUIT or (event.type == KEYDOWN and event.key == K_q):
-                score_text = f'Wins: {records[0]}   Losses: {records[1]}   Draws: {records[2]}'
+                ai_instance.flush_buffer_to_csv("history.csv")  # Write all buffered actions to the CSV
                 finalRecords()
             if event.type == KEYDOWN and event.key == K_d:
-                roundEnd = False
-
-
+                return  # Exit the loop to continue the game
 
 # function to reset things such as the bets, and player hands for a new round (plus we need to reset the starting Y
 # value for all the text shown in the end of the round
@@ -514,7 +528,6 @@ def finalRecords():
           sys.exit()
 
 # main game loop starts here
-
 gameOver = False
 while not gameOver:
     startGame()

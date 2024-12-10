@@ -1,19 +1,19 @@
 import csv
 import os
-from shared import Card
 import pandas as pd
 
 class AI:
     def __init__(self, card_class, history_file='ai_history.csv'):
         self.card_class = card_class
         self.card_counter = None
+        self.action_buffer = []  # Correctly name the buffer here
         self.history_file = history_file
 
         # Initialize the history file if it doesn't exist
         if not os.path.exists(self.history_file):
             with open(self.history_file, 'w', newline='') as file:
                 writer = csv.writer(file)
-                writer.writerow(['player_sum', 'dealer_visible', 'decision', 'outcome'])  # Header row
+                writer.writerow(['PlayerSum', 'DealerVisibleCard', 'Decision', 'Outcome'])  # Header row
 
     def set_card_counter(self, card_counter):
         """
@@ -23,7 +23,7 @@ class AI:
 
     def decide_action(self, player_hand, dealer_hand, remaining_cards):
         """
-        Use historical data and the Minimax algorithm to decide whether to 'hit' or 'stand'.
+        Decide whether to 'hit' or 'stand' using historical data or Minimax algorithm.
         """
         player_sum = sum(card.value for card in player_hand)
         dealer_visible_card = dealer_hand[0] if dealer_hand and isinstance(dealer_hand[0], self.card_class) else None
@@ -35,14 +35,15 @@ class AI:
         # Predict the best action based on historical data
         best_action = self.predict_from_history(player_sum, dealer_visible_card.value)
 
-        # If no historical data is available, fall back to the Minimax algorithm
+        # If no historical data is available, fall back to Minimax
         if not best_action:
             best_action = self.minimax(player_hand, dealer_visible_card, remaining_cards, is_player_turn=True)
 
-        # Log the decision
-        self.log_to_csv(player_sum, dealer_visible_card.value, best_action, "Pending")  # Outcome will be updated later
+        # Add the action to the buffer with a "Pending" outcome
+        self.action_buffer.append([player_sum, dealer_visible_card.value, best_action, "Pending"])  # Use action_buffer here
 
         return best_action
+
 
 
 
@@ -67,16 +68,6 @@ class AI:
             print(f"ERROR: Could not read historical data: {e}")
 
         return None  # No prediction available
-
-
-    def log_to_csv(self, player_sum, dealer_visible_card, decision, outcome):
-        """
-        Log the player's sum, dealer's visible card, decision, and outcome to a CSV file.
-        """
-        with open(self.history_file, "a", newline="") as file:
-            writer = csv.writer(file)
-            writer.writerow([player_sum, dealer_visible_card, decision, outcome])
-
 
     def minimax(self, player_hand, dealer_visible_card, remaining_cards, is_player_turn, depth=0, alpha=float('-inf'), beta=float('inf')):
         """
@@ -160,38 +151,23 @@ class AI:
 
         return score
 
-    def update_outcome_in_csv(self, player_sum, dealer_visible_card, decision, outcome, history_file="ai_history.csv"):
-            """
-            Updates the outcome of the most recent Pending record in the CSV.
-            """
-            try:
-                # Ensure the file exists before reading
-                if not os.path.exists(history_file):
-                    print(f"ERROR: History file '{history_file}' does not exist.")
-                    return
+    def update_outcome_in_buffer(self, outcome):
+        """Update the outcome for the last logged action in the buffer."""
+        for entry in self.action_buffer:  # Updated to use action_buffer
+            if entry[-1] == "Pending":  # Find the last pending entry
+                entry[-1] = outcome
 
-                # Load the historical data
-                data = pd.read_csv(history_file)
+    def flush_buffer_to_csv(self, csv_file):
+        """Write all buffered actions to the CSV."""
+        try:
+            if not self.action_buffer:
+                print("DEBUG: No actions in buffer to write.")  # Debug statement
+            else:
+                print(f"DEBUG: Writing actions to {csv_file}: {self.action_buffer}")  # Debug statement
 
-                # Ensure necessary columns are in the data
-                if not {"PlayerSum", "DealerVisibleCard", "Decision", "Outcome"}.issubset(data.columns):
-                    raise ValueError("Missing required columns in historical data.")
-
-                # Find the most recent row with a matching Pending entry
-                pending_rows = data[(data["PlayerSum"] == player_sum) &
-                                    (data["DealerVisibleCard"] == dealer_visible_card) &
-                                    (data["Decision"] == decision) &
-                                    (data["Outcome"] == "Pending")]
-
-                if not pending_rows.empty:
-                    index_to_update = pending_rows.index[0]
-                    data.at[index_to_update, "Outcome"] = outcome
-                    print(f"Updated outcome to {outcome} for PlayerSum {player_sum}, DealerVisibleCard {dealer_visible_card}, Decision {decision}")
-                else:
-                    print(f"No matching 'Pending' row found for PlayerSum {player_sum}, DealerVisibleCard {dealer_visible_card}, Decision {decision}")
-
-                # Write updated data back to the CSV
-                data.to_csv(history_file, index=False)
-
-            except Exception as e:
-                print(f"ERROR: Could not update outcome in CSV: {e}")
+            with open(csv_file, "a", newline="") as file:
+                writer = csv.writer(file)
+                writer.writerows(self.action_buffer)  # Write from action_buffer
+                self.action_buffer.clear()  # Clear the buffer after writing
+        except IOError as e:
+            print(f"ERROR: Could not write to {csv_file}: {e}")

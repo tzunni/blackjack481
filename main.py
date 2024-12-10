@@ -4,7 +4,12 @@ import random
 import pygame
 from pygame.locals import *
 import sys
+from ai import AI
+from card_counter import CardCounter
 
+ai_agent = AI()
+card_counter = CardCounter()
+ai_agent.set_card_counter(card_counter)
 
 class Card:
 
@@ -72,6 +77,9 @@ class Dealer:
         self.count = 0
         self.x = halfWidth
         self.y = 100
+        self.remaining_decks = 1.0  # For a single deck, set this to 1.0
+
+        
 
     # this method creates the two-card hand that the dealer starts with
     def createDealerHand(self):
@@ -157,21 +165,18 @@ class Player:
         self.currentTurn = False
 
     # this method asks the player for their choice of action when it is their turn
-    def askChoice(self):
-        inp = 0
-        answered = False
-        while answered is False:
-            for event in pygame.event.get():
-                if event.type == QUIT or (event.type == KEYDOWN and event.key == K_ESCAPE):
-                    pygame.quit()
-                    sys.exit()
-                if event.type == KEYDOWN and event.key == K_h:
-                    inp = 1
-                    answered = True
-                if event.type == KEYDOWN and event.key == K_s:
-                    inp = 2
-                    answered = True
-        return inp
+    def aiChoice(self, dealer_hand):
+        """
+        Use the AI agent to decide the next action.
+        :param dealer_hand: The dealer's visible cards.
+        :param remaining_decks: The number of remaining decks in the game.
+        :return: 1 for 'Hit', 2 for 'Stand'
+        """
+        action = ai_agent.decide_action(self, self.hand, dealer_hand)
+        if action == "hit":
+            return 1  # Hit
+        elif action == "stand":
+            return 2  # Stand
 
     # this method adds a card provided by the dealer to the player's hand
     def addCard(self, card):
@@ -338,37 +343,34 @@ def playTurns():
     player.currentTurn = True
     player.printHand()
     drawTurn(screen)
-    if player.blackjack is True:
-        score_text = ''
-        add_text(score_text, text_SubHeading, screen, 240, 730, white)
-        drawTurn(screen)
-        showEndRoundScreen(screen)
-    else:
-      choice = player.askChoice()
-      if choice == 1:
-        keepHitting = True
-        while keepHitting is True:
-          hitCard = dealer.dealCard()
-          player.addCard(hitCard)
-          drawTurn(screen)
-          player.printHand()
-          if player.count == 21:
-            print("")
-            print(str(player.name) + " got a blackjack!")
-            player.blackjack = True
+    
+    remaining_decks = len(dealer.deck.cards) // 52  # Calculate remaining decks
+    dealer_visible_card = [dealer.hand[0].value]  # Assuming the dealer's first card is visible
+    
+    while True:
+        choice = player.aiChoice(dealer_visible_card)  # Use AI logic
+        if choice == 1:  # AI chooses to hit
+            hitCard = dealer.dealCard()
+            player.addCard(hitCard)
+            drawTurn(screen)
+            player.printHand()
+            if player.count == 21:
+                print("")
+                print(str(player.name) + " got a blackjack!")
+                player.blackjack = True
+                break
+            if player.count > 21:
+                print("")
+                print(str(player.name) + ", you busted.")
+                player.bust = True
+                break
+        else:  # AI chooses to stand
             break
-          if player.count > 21:
-            print("")
-            print(str(player.name) + ", you busted.")
-            player.bust = True
-            break
-          choice = player.askChoice()
-          if choice != 1:
-            keepHitting = False
-      score_text = ''
-      add_text(score_text, text_SubHeading, screen, 240, 730, white)
-      drawTurn(screen)
-      showEndRoundScreen(screen)
+    
+    score_text = ''
+    add_text(score_text, text_SubHeading, screen, 240, 730, white)
+    drawTurn(screen)
+    showEndRoundScreen(screen)
 
 # function to draw the screen every time an action is conducted in the playing of the game
 def drawTurn(surface):

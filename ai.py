@@ -13,7 +13,7 @@ class AI:
         if not os.path.exists(self.history_file):
             with open(self.history_file, 'w', newline='') as file:
                 writer = csv.writer(file)
-                writer.writerow(['player_sum', 'dealer_visible', 'decision', 'outcome'])  # Header row
+                writer.writerow(["PlayerSum", "DealerVisibleCard", "Decision", "Outcome"])  # Header row
 
     def set_card_counter(self, card_counter):
         """

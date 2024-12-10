@@ -1,5 +1,13 @@
 import random
 
+class Card:
+    def __init__(self, suit, color, label, value):
+        self.suit = suit
+        self.color = color
+        self.label = label
+        self.value = value
+
+
 class Deck:
     def __init__(self, card_file='cards.txt'):
         """

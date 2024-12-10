@@ -15,12 +15,18 @@ class Card:
         self.label = label
         self.value = value
 
+    def __str__(self):
+        return f"{self.label}  {self.suit}"
+
+    def __repr__(self):
+        return self.__str__()
 
 class Deck:
 
     # this class contains an array that acts as our 52 card deck
     def __init__(self):
         self.cards = []
+        self.shuffle = False
 
     # this method simply creates a deck using the Card class above
     def createDeck(self):
@@ -52,6 +58,7 @@ class Deck:
 
     # this method allows us to shuffle our deck so that it is randomly arranged
     def shuffleDeck(self):
+        self.shuffle = True
         return random.shuffle(self.cards)
 
     # this method basically gets the top card of the deck and returns it
@@ -60,6 +67,9 @@ class Deck:
         self.cards.pop(0)
         return topCard
 
+    # Method to display all cards in the deck
+    def showDeck(self):
+        return "[" + ", ".join(str(card) for card in self.cards) + "]"
 
 class Dealer:
 
@@ -267,7 +277,7 @@ text_Small = pygame.font.SysFont(fontType, 10)
 
 # global variables listed below
 player = Player("AI Agent Minimax")
-dealer = Dealer()
+# dealer = Dealer()
 startY = 50
 round = 0
 # win, loss, draw/push
@@ -466,10 +476,10 @@ def resetStats():
 
 # function displays the final scores of the game
 def finalRecords():
-    global records, score_text, round, player
+    global records, score_text, round, player, dealer
     pygame.init()
     pygame.display.set_caption("Game Over")
-    global players, dealer, records
+    # global players, dealer, records
     screen = pygame.display.set_mode((screenWidth, screenHeight))
     screen.fill(green)
     add_text(player.name + " Game Stats:", text_Title, screen, 600, 200, black)

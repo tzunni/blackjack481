@@ -1,6 +1,5 @@
 from shared import Card
 
-
 class AI:
     def __init__(self, card_class):
         self.card_class = card_class
@@ -16,17 +15,19 @@ class AI:
         """
         Use the Minimax algorithm to decide whether to 'hit' or 'stand'.
         """
-        print(f"DEBUG: Remaining cards at start of decision: {[f'{card.label} of {card.suit}' for card in remaining_cards]}")  # Debug print
+        # DEBUG: Print the remaining cards
+        print(f"DEBUG: Remaining cards at start of decision: {[f'{card.label} of {card.suit}' for card in remaining_cards]}")
+
         player_sum = sum(card.value for card in player_hand)
         dealer_visible_card = dealer_hand[0]  # Dealer's visible card
 
-        # If the player's current sum is already 21 or above, stand
         if player_sum >= 21:
             return "stand"
 
-        # Perform the Minimax search to determine the best action
+        # Perform Minimax decision-making
         best_action = self.minimax(player_hand, dealer_visible_card, remaining_cards, is_player_turn=True)
         return best_action
+
 
 
     def minimax(self, player_hand, dealer_visible_card, remaining_cards, is_player_turn, depth=0, alpha=float('-inf'), beta=float('inf')):

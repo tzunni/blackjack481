@@ -5,17 +5,8 @@ import pygame
 from pygame.locals import *
 import sys
 from ai import AI
+from shared import Card
 from card_counter import CardCounter
-
-class Card:
-
-    # this class contains all attributes of a playing card
-    def __init__(self, suit, color, label, value):
-        self.suit = suit
-        self.color = color
-        self.label = label
-        self.value = value
-
 
 class Deck:
 
@@ -167,8 +158,9 @@ class Player:
     # this method asks the player for their choice of action when it is their turn
     def askChoice(self):
         if self.is_ai and self.ai:
-            dealer_hand_values = [card.value for card in dealer.hand]
-            remaining_cards = len(dealer.deck.cards)  # Use the count of remaining cards
+            dealer_hand_values = dealer.hand  # Pass the dealer's actual hand
+            remaining_cards = dealer.deck.cards  # Pass remaining cards from the dealer's deck
+            print(f"DEBUG: Remaining cards in deck: {[f'{card.label} of {card.suit}' for card in remaining_cards]}")  # Debug print
             decision = self.ai.decide_action(self.hand, dealer_hand_values, remaining_cards)
             print(f"{self.name} (AI) chooses to {decision.upper()}")
             return 1 if decision == "hit" else 2
@@ -276,7 +268,7 @@ halfWidth, halfHeight = screenWidth / 2, screenHeight / 2
 card_counter = CardCounter()
 
 # Pass the card_counter to AI
-ai_instance = AI()
+ai_instance = AI(Card)  # Pass the Card class to the AI instance
 ai_instance.set_card_counter(card_counter)
 
 # Modify player creation to include card counting
@@ -361,7 +353,7 @@ def checkBlackJack():
 # function to run the turns of all players, basically allowing to hit and pass as normal
 # this function also contains the code for changing the value of an ace when necessary
 def playTurns():
-    global player, round, score_text
+    global player, round, score_text, last_decision  # Add last_decision here
     round += 1
     pygame.init()
     screen = pygame.display.set_mode((screenWidth, screenHeight))
@@ -369,37 +361,34 @@ def playTurns():
     player.currentTurn = True
     player.printHand()
     drawTurn(screen)
-    if player.blackjack is True:
-        score_text = ''
-        add_text(score_text, text_SubHeading, screen, 240, 730, white)
-        drawTurn(screen)
-        showEndRoundScreen(screen)
-    else:
-      choice = player.askChoice()
-      if choice == 1:
-        keepHitting = True
-        while keepHitting is True:
-          hitCard = dealer.dealCard()
-          player.addCard(hitCard)
-          drawTurn(screen)
-          player.printHand()
-          if player.count == 21:
-            print("")
-            print(str(player.name) + " got a blackjack!")
-            player.blackjack = True
+
+    if player.blackjack:
+        print(f"{player.name} has a blackjack!")
+        last_decision = "stand"  # Automatically stand if blackjack
+        return
+
+    while not player.bust and not player.blackjack:
+        choice = player.askChoice()  # AI logic makes the decision
+        if choice == 1:  # AI decides to hit
+            hitCard = dealer.dealCard()
+            player.addCard(hitCard)
+            drawTurn(screen)
+            player.printHand()
+            last_decision = "hit"  # Update the last decision
+            if player.count > 21:
+                player.bust = True
+                print(f"{player.name} busted with a count of {player.count}.")
+                break
+        elif choice == 2:  # AI decides to stand
+            print(f"{player.name} decides to stand with a count of {player.count}.")
+            last_decision = "stand"  # Update the last decision
             break
-          if player.count > 21:
-            print("")
-            print(str(player.name) + ", you busted.")
-            player.bust = True
-            break
-          choice = player.askChoice()
-          if choice != 1:
-            keepHitting = False
-      score_text = ''
-      add_text(score_text, text_SubHeading, screen, 240, 730, white)
-      drawTurn(screen)
-      showEndRoundScreen(screen)
+
+    score_text = f'Wins: {records[0]}   Losses: {records[1]}   Draws: {records[2]}'
+    drawTurn(screen)
+
+
+
 
 # function to draw the screen every time an action is conducted in the playing of the game
 def drawTurn(surface):
@@ -463,7 +452,7 @@ def compareCounts(surface):
       records[1] += 1
 
 # function to display a message about the results of the previous round
-def showEndRoundScreen(surface):
+def showEndRoundScreen(surface, last_decision):
     global startY, gameOver, player, score_text
     pygame.init()
     pygame.display.set_caption("Round Over")
@@ -477,6 +466,14 @@ def showEndRoundScreen(surface):
     countString1 += str(player.name) + "'s Count: " + str(player.count)
     add_text(countString1, text_Normal, surface, halfWidth, 450, orange)
 
+    # Add AI update
+    ai_instance.update_outcome_in_csv(
+        player.count,
+        dealer.hand[0].value if dealer.hand else 0,
+        last_decision,
+        outcome="Win" if player.count > dealer.count else "Loss" if player.count < dealer.count else "Tie"
+    )
+
     add_text("Press 'D' to DEAL or Press 'Q' to QUIT", text_SubHeading, surface, halfWidth, 500, orange)
     pygame.display.update()
     roundEnd = True
@@ -487,6 +484,8 @@ def showEndRoundScreen(surface):
                 finalRecords()
             if event.type == KEYDOWN and event.key == K_d:
                 roundEnd = False
+
+
 
 # function to reset things such as the bets, and player hands for a new round (plus we need to reset the starting Y
 # value for all the text shown in the end of the round
@@ -517,13 +516,14 @@ def finalRecords():
 # main game loop starts here
 
 gameOver = False
-while gameOver is False:
+while not gameOver:
     startGame()
     fixCoordinates()
-    roundOver = False
-    while roundOver is False:
+    while True:  # Loop for each round
         newDeck()
         createHands()
         checkBlackJack()
         playTurns()
+        showEndRoundScreen(pygame.display.set_mode((screenWidth, screenHeight)), last_decision)
         resetStats()
+

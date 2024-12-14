@@ -1,5 +1,7 @@
-from shared import Card
+# This file represents our second version of our AI, which incorporates Minimax with Alpha-Beta Pruning, along with our hi-lo card counting algorithm.
 
+
+from shared import Card
 
 class AI:
     def __init__(self, card_class):
@@ -7,39 +9,29 @@ class AI:
         self.card_counter = None
 
     def set_card_counter(self, card_counter):
-        """
-        Set the card counter instance.
-        """
         self.card_counter = card_counter
 
     def decide_action(self, player_hand, dealer_hand, remaining_cards):
-        """
-        Use the Minimax algorithm to decide whether to 'hit' or 'stand'.
-        """
-        print(f"DEBUG: Remaining cards at start of decision: {[f'{card.label} of {card.suit}' for card in remaining_cards]}")  # Debug print
         player_sum = sum(card.value for card in player_hand)
         dealer_visible_card = dealer_hand[0]  # Dealer's visible card
 
-        # If the player's current sum is already 21 or above, stand
         if player_sum >= 21:
             return "stand"
 
-        # Perform the Minimax search to determine the best action
+        # Perform Minimax decision-making
         best_action = self.minimax(player_hand, dealer_visible_card, remaining_cards, is_player_turn=True)
         return best_action
 
 
+
     def minimax(self, player_hand, dealer_visible_card, remaining_cards, is_player_turn, depth=0, alpha=float('-inf'), beta=float('inf')):
-        """
-        Minimax algorithm with Alpha-Beta Pruning.
-        """
         player_sum = sum(card.value for card in player_hand)
 
         # Terminate if the player busts, stands, or reaches the maximum depth
         if player_sum > 21 or depth == 3 or not remaining_cards:
             return self.evaluate_hand(player_hand, dealer_visible_card)
 
-        # Player's turn: Maximize the score
+        # Player's turn
         if is_player_turn:
             max_value = float('-inf')
             best_action = "stand"
@@ -67,7 +59,7 @@ class AI:
 
             return best_action if depth == 0 else max_value
 
-        # Dealer's turn: Minimize the player's score
+        # Dealer's turn
         else:
             min_value = float('inf')
 
@@ -93,7 +85,7 @@ class AI:
 
         # Penalize busting
         if player_sum > 21:
-            return -float('inf')  # Bust: Worst possible score
+            return -float('inf')  # Bust
 
         # Reward standing when the score is close to 21
         score = player_sum

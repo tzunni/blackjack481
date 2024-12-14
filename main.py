@@ -1,15 +1,70 @@
-# all of our imports are listed here
-import math
 import random
 import pygame
 from pygame.locals import *
 import sys
-from ai import AI
-from shared import Card
-from card_counter import CardCounter
+
+class Card:
+    # this class contains all attributes of a playing card
+    def __init__(self, suit, color, label, value):
+        self.suit = suit
+        self.color = color
+        self.label = label
+        self.value = value
+
+    def __str__(self):
+        return f"{self.label}  {self.suit}"
+
+    def __repr__(self):
+        return self.__str__()
+
+# Attempt to import AI and CardCounter if available
+try:
+    from ai import AI
+    from card_counter import CardCounter
+except ImportError:
+    # If these are not available, define placeholders
+    class CardCounter:
+        def update_count(self, card_id):
+            pass
+
+    class AI:
+        def __init__(self, card_class):
+            pass
+        def set_card_counter(self, card_counter):
+            pass
+        def decide_action(self, player_hand, dealer_hand, remaining_cards):
+            return "stand"
+        def update_outcome_in_buffer(self, outcome):
+            pass
+        def flush_buffer_to_csv(self, filename):
+            pass
+
+
+# all of our imports are listed here
+pygame.init()
+pygame.font.init()
+
+screenWidth, screenHeight = 1250, 750
+halfWidth, halfHeight = screenWidth / 2, screenHeight / 2
+
+black, blue, white, orange, red , green = (0, 0, 0), (51, 235, 255), (255, 255, 255), (255, 165, 0), (255, 0, 0), (34, 139, 34)
+fontType = 'Poppins'
+text_Title = pygame.font.SysFont(fontType, 80)
+text_Heading = pygame.font.SysFont(fontType, 60)
+text_SubHeading = pygame.font.SysFont(fontType, 45)
+text_Bold = pygame.font.SysFont(fontType, 30)
+text_Normal = pygame.font.SysFont(fontType, 20)
+text_Small = pygame.font.SysFont(fontType, 10)
+
+# function to add text to the game when needed
+def add_text(text, font, surface, x, y, text_color):
+    textObject = font.render(text, False, text_color)
+    textWidth = textObject.get_rect().width
+    textHeight = textObject.get_rect().height
+    surface.blit(textObject, (x - (textWidth / 2), y - (textHeight / 2)))
+
 
 class Deck:
-
     # this class contains an array that acts as our 52 card deck
     def __init__(self):
         self.cards = []
@@ -52,12 +107,13 @@ class Deck:
         self.cards.pop(0)
         if card_counter:
             # Update the card counter with the drawn card
-            card_counter.update_count(topCard.label + topCard.suit[0])  # Example: "AH" for Ace of Hearts
+            # We'll use label + suit's first letter as an ID, for example "A" + "H" for Ace of Hearts
+            card_id = str(topCard.label) + topCard.suit[0]
+            card_counter.update_count(card_id)
         return topCard
 
 
 class Dealer:
-
     # this class contains everything that is within the control of the dealer
     def __init__(self, card_counter=None):
         self.deck = Deck()
@@ -114,11 +170,11 @@ class Dealer:
         playerBoxLength, playerBoxHeight = cardWidth + (cardGap * (len(self.hand) - 1)), cardHeight
         playerTopLeftX = self.x - (0.5 * playerBoxLength)
         playerTopLeftY = self.y - (0.5 * playerBoxHeight)
-        for card in self.hand:
-            if card == self.hand[1]:
+        for c in self.hand:
+            if c == self.hand[1]:
                 drawCard = pygame.image.load("Resources/Cards/Back/RedBack.png")
             else:
-                drawCard = pygame.image.load("Resources/Cards/" + str(card.suit) + "/" + str(card.label) + ".png")
+                drawCard = pygame.image.load("Resources/Cards/" + str(c.suit) + "/" + str(c.label) + ".png")
             resizedCard = pygame.transform.scale(drawCard, (cardWidth, cardHeight))
             surface.blit(resizedCard, (playerTopLeftX, playerTopLeftY))
             pygame.display.update()
@@ -131,7 +187,7 @@ class Dealer:
         add_text(countString1, text_Normal, surface, self.x + (0.20 * playerTopLeftX), self.y - 5, orange)
         deckX = 400 - (0.5 * cardWidth)
         deckY = 100 - (0.5 * cardHeight)
-        for card in range(1, 7):
+        for i in range(1, 7):
             deckCard = pygame.image.load("Resources/Cards/Back/RedBack.png")
             backCard = pygame.transform.scale(deckCard, (cardWidth, cardHeight))
             surface.blit(backCard, (deckX, deckY))
@@ -139,7 +195,6 @@ class Dealer:
 
 
 class Player:
-
     # this class contains everything that is within the control of the player
     def __init__(self, name, is_ai=False, ai_instance=None, card_counter=None):
         self.name = name
@@ -160,11 +215,9 @@ class Player:
         if self.is_ai and self.ai:
             dealer_hand_values = dealer.hand  # Pass the dealer's actual hand
             remaining_cards = dealer.deck.cards  # Pass remaining cards from the dealer's deck
-            print(f"DEBUG: Remaining cards in deck: {[f'{card.label} of {card.suit}' for card in remaining_cards]}")  # Debug print
             decision = self.ai.decide_action(self.hand, dealer_hand_values, remaining_cards)
             print(f"{self.name} (AI) chooses to {decision.upper()}")
             return 1 if decision == "hit" else 2
-
         else:
             inp = 0
             answered = False
@@ -207,24 +260,31 @@ class Player:
     # this method considers all aces in a player's hand to give them the closest count under 21
     def countCards(self):
         self.count = 0
+        aces = 0
+
+        # First pass: treat all Aces as 1
         for card in self.hand:
-            self.count += card.value
-        for card in self.hand:
-            if card.label == "A":
+            if card.label == 'A':
+                aces += 1
+                self.count += 1  # Ace as 1 initially
+            else:
+                self.count += card.value
+
+        # Now try to "upgrade" some Aces from 1 to 11 by adding 10 each time
+        for i in range(aces):
+            if self.count + 10 <= 21:
                 self.count += 10
-                if self.count > 21:
-                    self.count -= 10
-                    break
 
     # this method will draw all the cards in a hand (13 : 20 Card Dimension Ratio)
     def drawHand(self, surface):
         cardWidth, cardHeight = 78, 120
         cardGap = 20
-        playerBoxLength, playerBoxHeight = cardWidth + (cardGap * (len(self.hand) - 1)), cardHeight
+        playerBoxLength = cardWidth + (cardGap * (len(self.hand) - 1))
+        playerBoxHeight = cardHeight
         playerTopLeftX = self.x - (0.5 * playerBoxLength)
         playerTopLeftY = self.y - (0.5 * playerBoxHeight)
-        for card in self.hand:
-            drawCard = pygame.image.load("Resources/Cards/" + str(card.suit) + "/" + str(card.label) + ".png")
+        for c in self.hand:
+            drawCard = pygame.image.load("Resources/Cards/" + str(c.suit) + "/" + str(c.label) + ".png")
             resizedCard = pygame.transform.scale(drawCard, (cardWidth, cardHeight))
             surface.blit(resizedCard, (playerTopLeftX, playerTopLeftY))
             pygame.display.update()
@@ -234,7 +294,7 @@ class Player:
         nameColor = white
         if self.currentTurn:
             countString1 = ""
-            countString1 +=  "Count: " + str(player.count)
+            countString1 += "Count: " + str(player.count)
             add_text(countString1, text_Normal, surface, self.x + (0.20 * playerTopLeftX), self.y - 5, orange)
             nameColor = blue
             add_text("Hit(H) or Stand(S)", text_Normal, surface, self.x, self.y - (0.75 * cardHeight), nameColor)
@@ -255,57 +315,24 @@ class Player:
         self.resetHandAndCount()
 
 
-
-
-# below consists the py-game/graphics related code
-
-pygame.init()
-pygame.font.init()
-screenWidth, screenHeight = 1250, 750
-halfWidth, halfHeight = screenWidth / 2, screenHeight / 2
-
-# Instantiate CardCounter
+# global variables listed below
+# Instantiate CardCounter and AI (from second snippet)
 card_counter = CardCounter()
-
-# Pass the card_counter to AI
 ai_instance = AI(Card)  # Pass the Card class to the AI instance
 ai_instance.set_card_counter(card_counter)
 
-# Modify player creation to include card counting
 player = Player("AI Agent Minimax", is_ai=True, ai_instance=ai_instance, card_counter=card_counter)
-
-# Instantiate Dealer with card_counter
 dealer = Dealer(card_counter=card_counter)
 
-remaining_cards = [card.value for card in dealer.deck.cards]
-
-
-black, blue, white, orange, red , green = (0, 0, 0), (51, 235, 255), (255, 255, 255), (255, 165, 0), (255, 0, 0), (34, 139, 34)
-fontType = 'Poppins'
-text_Title = pygame.font.SysFont(fontType, 80)
-text_Heading = pygame.font.SysFont(fontType, 60)
-text_SubHeading = pygame.font.SysFont(fontType, 45)
-text_Bold = pygame.font.SysFont(fontType, 30)
-text_Normal = pygame.font.SysFont(fontType, 20)
-text_Small = pygame.font.SysFont(fontType, 10)
-
-# global variables listed below
+remaining_cards = [c.value for c in dealer.deck.cards]
 
 startY = 50
 round = 0
-# win, loss, draw/push
-records = [0, 0, 0]
+records = [0, 0, 0]  # wins, losses, draws
 score_text = f'Wins: {records[0]}   Losses: {records[1]}   Draws: {records[2]}'
+last_decision = None
 
 
-# function to add text to the game when needed
-def add_text(text, font, surface, x, y, text_color):
-    textObject = font.render(text, False, text_color)
-    textWidth = textObject.get_rect().width
-    textHeight = textObject.get_rect().height
-    surface.blit(textObject, (x - (textWidth / 2), y - (textHeight / 2)))
-
-# function to create the start screen for the game
 def startGame():
     pygame.init()
     screen = pygame.display.set_mode((screenWidth, screenHeight))
@@ -323,74 +350,28 @@ def startGame():
             if event.type == KEYDOWN and event.key == K_SPACE:
                 beginning = False
 
-# function that sets the x and y coordinates of every player plus the dealer
 def fixCoordinates():
     global player, dealer
     player.x = halfWidth
     player.y = 650
 
-# function to restore all the cards to the deck for a new round
 def newDeck():
-    global dealer
-    dealer = Dealer()
+    global dealer, card_counter
+    dealer = Dealer(card_counter=card_counter)
 
-# function to create the hands of the dealer and all the players
 def createHands():
     global dealer
     dealer.createDealerHand()
     for i in range(1, 3):
-      card = dealer.dealCard()
-      player.addCard(card)
+        card = dealer.dealCard()
+        player.addCard(card)
 
-# function to check for blackjacks (basically when the first two initial cards dealt to a player add up to 21)
-# if there is one you automatically win one and a half times your bet, and you sit out for the round
 def checkBlackJack():
-  if player.count == 21:
-    print("")
-    print(player.name + ", you got a BLACKJACK !")
-    player.blackjack = True
+    if player.count == 21:
+        print("")
+        print(player.name + ", you got a BLACKJACK !")
+        player.blackjack = True
 
-# function to run the turns of all players, basically allowing to hit and pass as normal
-# this function also contains the code for changing the value of an ace when necessary
-def playTurns():
-    global player, round, score_text, last_decision  # Add last_decision here
-    round += 1
-    pygame.init()
-    screen = pygame.display.set_mode((screenWidth, screenHeight))
-    pygame.display.set_caption("Play Round " + str(round))
-    player.currentTurn = True
-    player.printHand()
-    drawTurn(screen)
-
-    if player.blackjack:
-        print(f"{player.name} has a blackjack!")
-        last_decision = "stand"  # Automatically stand if blackjack
-        return
-
-    while not player.bust and not player.blackjack:
-        choice = player.askChoice()  # AI logic makes the decision
-        if choice == 1:  # AI decides to hit
-            hitCard = dealer.dealCard()
-            player.addCard(hitCard)
-            drawTurn(screen)
-            player.printHand()
-            last_decision = "hit"  # Update the last decision
-            if player.count > 21:
-                player.bust = True
-                print(f"{player.name} busted with a count of {player.count}.")
-                break
-        elif choice == 2:  # AI decides to stand
-            print(f"{player.name} decides to stand with a count of {player.count}.")
-            last_decision = "stand"  # Update the last decision
-            break
-
-    score_text = f'Wins: {records[0]}   Losses: {records[1]}   Draws: {records[2]}'
-    drawTurn(screen)
-
-
-
-
-# function to draw the screen every time an action is conducted in the playing of the game
 def drawTurn(surface):
     global player, dealer, records, score_text
     screen = pygame.display.set_mode((screenWidth, screenHeight))
@@ -401,7 +382,6 @@ def drawTurn(surface):
     add_text(score_text, text_SubHeading, surface, 240, 730, white)
     pygame.display.update()
 
-# function to reveal the face down card of the dealer, and if the dealer has to force hit he will do so
 def revealDealerHand(surface):
     global dealer, startY, player
     dealerBust = False
@@ -416,104 +396,44 @@ def revealDealerHand(surface):
     dealer.printDealerHand()
     dealer.printDealerCount()
     if player.blackjack:
-          add_text(str(player.name) + " got a blackjack!", text_Normal, surface, halfWidth, 370, white)
+        add_text(str(player.name) + " got a blackjack!", text_Normal, surface, halfWidth, 370, white)
     return dealerBust
 
-# function to see how the bets are retrieved based on counts
 def compareCounts(surface):
     global player, dealer, startY, records
     noCounts = True
     highestCount = 0
     if 21 >= player.count > highestCount:
-      highestCount = player.count
-      noCounts = False
+        highestCount = player.count
+        noCounts = False
     if noCounts is False:
-      if player.count == highestCount and highestCount > dealer.count:
-        print("")
-        print(str(player.name) + ", YOU WON!")
-        add_text(str(player.name) + ", YOU WON!", text_Normal, surface, halfWidth, 350, white)
-        records[0] += 1
-        if player.blackjack:
-          add_text(str(player.name) + " got a blackjack!", text_Normal, surface, halfWidth, 370, white)
-      elif player.count == dealer.count:
-        print("")
-        print("YOU TIED.")
-        add_text("YOU TIED.", text_Normal, surface, halfWidth, 350, white)
-        records[2] += 1
-        if player.blackjack:
-          add_text(str(player.name) + " got a blackjack!", text_Normal, surface, halfWidth, 370, white)
-      elif player.count < dealer.count and player.blackjack is False:
-        print("")
-        print("The Dealer won. YOU LOSE.")
-        add_text("The Dealer won. YOU LOSE.", text_Normal, surface, halfWidth, 350, white)
-        records[1] += 1
+        if player.count == highestCount and highestCount > dealer.count:
+            print("")
+            print(str(player.name) + ", YOU WON!")
+            add_text(str(player.name) + ", YOU WON!", text_Normal, surface, halfWidth, 350, white)
+            records[0] += 1
+            if player.blackjack:
+                add_text(str(player.name) + " got a blackjack!", text_Normal, surface, halfWidth, 370, white)
+        elif player.count == dealer.count:
+            print("")
+            print("YOU TIED.")
+            add_text("YOU TIED.", text_Normal, surface, halfWidth, 350, white)
+            records[2] += 1
+            if player.blackjack:
+                add_text(str(player.name) + " got a blackjack!", text_Normal, surface, halfWidth, 370, white)
+        elif player.count < dealer.count and player.blackjack is False:
+            print("")
+            print("The Dealer won. YOU LOSE.")
+            add_text("The Dealer won. YOU LOSE.", text_Normal, surface, halfWidth, 350, white)
+            records[1] += 1
     elif player.bust:
-      add_text(str(player.name) + " busted. YOU LOSE.", text_Normal, surface, halfWidth, 350, white)
-      records[1] += 1
-
-# function to display a message about the results of the previous round
-def showEndRoundScreen(surface, last_decision):
-    global player, dealer, ai_instance, score_text, records
-
-    pygame.init()
-    pygame.display.set_caption("Round Over")
-    surface.fill(black)
-
-    # Determine the outcome
-    if player.bust:
-        outcome = "Loss"
-        records[1] += 1
-    elif dealer.count > 21 or player.count > dealer.count:
-        outcome = "Win"
-        records[0] += 1
-    elif player.count == dealer.count:
-        outcome = "Tie"
-        records[2] += 1
-    else:
-        outcome = "Loss"
+        add_text(str(player.name) + " busted. YOU LOSE.", text_Normal, surface, halfWidth, 350, white)
         records[1] += 1
 
-    # Call flush_buffer_to_csv after determining the outcome
-    ai_instance.update_outcome_in_buffer(outcome)  # Update all actions in the buffer with the outcome
-    ai_instance.flush_buffer_to_csv(ai_instance.history_file)  # Write all buffered actions to the CSV file
-
-
-    # Update the win/loss/draw counter
-    score_text = f'Wins: {records[0]}   Losses: {records[1]}   Draws: {records[2]}'
-
-    # Display the outcome
-    add_text("Results:", text_SubHeading, surface, halfWidth, 300, orange)
-    add_text(f"Outcome: {outcome}", text_Normal, surface, halfWidth, 350, white)
-
-    # Display the win/loss/draw counter
-    add_text(score_text, text_SubHeading, surface, halfWidth, 400, white)
-
-    # Add prompt to continue or quit
-    add_text("Press 'D' to DEAL or Press 'Q' to QUIT", text_SubHeading, surface, halfWidth, 500, orange)
-    pygame.display.update()
-
-    # Wait for user input to continue or quit
-    while True:
-        for event in pygame.event.get():
-            if event.type == QUIT or (event.type == KEYDOWN and event.key == K_q):
-                ai_instance.flush_buffer_to_csv("history.csv")  # Write all buffered actions to the CSV
-                finalRecords()
-            if event.type == KEYDOWN and event.key == K_d:
-                return  # Exit the loop to continue the game
-
-# function to reset things such as the bets, and player hands for a new round (plus we need to reset the starting Y
-# value for all the text shown in the end of the round
-def resetStats():
-    global player, startY
-    player.resetState()
-    startY = 100
-
-# function displays the final scores of the game
 def finalRecords():
     global records, score_text, round, player
     pygame.init()
     pygame.display.set_caption("Game Over")
-    global players, dealer, records
     screen = pygame.display.set_mode((screenWidth, screenHeight))
     screen.fill(green)
     add_text(player.name + " Game Stats:", text_Title, screen, 600, 200, black)
@@ -522,10 +442,109 @@ def finalRecords():
     add_text("Press 'L' to LEAVE the game", text_SubHeading, screen, 600, 550, orange)
     pygame.display.update()
     while True:
-      for event in pygame.event.get():
-        if event.type == QUIT or (event.type == KEYDOWN and event.key == K_l):
-          pygame.quit()
-          sys.exit()
+        for event in pygame.event.get():
+            if event.type == QUIT or (event.type == KEYDOWN and event.key == K_l):
+                pygame.quit()
+                sys.exit()
+
+def playTurns():
+    global player, round, score_text, last_decision
+    round += 1
+    pygame.init()
+    screen = pygame.display.set_mode((screenWidth, screenHeight))
+    pygame.display.set_caption("Play Round " + str(round))
+    player.currentTurn = True
+    player.printHand()
+    drawTurn(screen)
+
+    if player.blackjack:
+        print(f"{player.name} has a blackjack!")
+        last_decision = "stand"
+        return
+
+    while not player.bust and not player.blackjack:
+        choice = player.askChoice()
+        if choice == 1:  # hit
+            hitCard = dealer.dealCard()
+            player.addCard(hitCard)
+            drawTurn(screen)
+            player.printHand()
+            last_decision = "hit"
+            if player.count > 21:
+                player.bust = True
+                print(f"{player.name} busted with a count of {player.count}.")
+                break
+        elif choice == 2:  # stand
+            print(f"{player.name} decides to stand with a count of {player.count}.")
+            last_decision = "stand"
+            break
+
+    score_text = f'Wins: {records[0]}   Losses: {records[1]}   Draws: {records[2]}'
+    drawTurn(screen)
+
+
+def showEndRoundScreen(surface, last_decision):
+    global player, dealer, ai_instance, score_text, records
+
+    pygame.init()
+    pygame.display.set_caption("Round Over")
+    surface.fill(green)
+
+    # Reveal dealer hand first
+    dealerBust = revealDealerHand(surface)
+
+    # If dealer didn't bust, we must compare counts to update records
+    if not dealerBust:
+        compareCounts(surface)
+
+    # Now records should be updated by this point
+    score_text = f'Wins: {records[0]}   Losses: {records[1]}   Draws: {records[2]}'
+
+    # Determine the outcome string just for display (records are already updated)
+    if player.bust:
+        outcome = "Loss"
+    elif dealerBust:
+        outcome = "Win"
+    else:
+        # Deduce outcome from counts
+        if player.count > 21:
+            outcome = "Loss"
+        elif dealer.count > 21:
+            outcome = "Win"
+        elif player.count > dealer.count:
+            outcome = "Win"
+        elif player.count == dealer.count:
+            outcome = "Tie"
+        else:
+            outcome = "Loss"
+
+    # Update AI’s history buffer with final outcome
+    ai_instance.update_outcome_in_buffer(outcome)
+    ai_instance.flush_buffer_to_csv(ai_instance.history_file if hasattr(ai_instance, 'history_file') else "history.csv")
+
+    # Starting Y position
+    y_start = 300
+    line_spacing = 50  # Adjust spacing between lines
+
+    add_text("Results:", text_SubHeading, surface, halfWidth, y_start, orange)
+    add_text(score_text, text_SubHeading, surface, halfWidth, y_start + 2 * line_spacing, white)
+    add_text("Press 'D' to DEAL or Press 'Q' to QUIT", text_SubHeading, surface, halfWidth, y_start + 3 * line_spacing, orange)
+    pygame.display.update()
+
+    while True:
+        for event in pygame.event.get():
+            if event.type == QUIT or (event.type == KEYDOWN and event.key == K_q):
+                ai_instance.flush_buffer_to_csv("history.csv")
+                finalRecords()
+            if event.type == KEYDOWN and event.key == K_d:
+                return  # Continue to next round
+
+
+def resetStats():
+    global player, startY
+    player.resetState()
+    startY = 100
+
 
 # main game loop starts here
 gameOver = False
@@ -537,6 +556,6 @@ while not gameOver:
         createHands()
         checkBlackJack()
         playTurns()
-        showEndRoundScreen(pygame.display.set_mode((screenWidth, screenHeight)), last_decision)
+        screen = pygame.display.set_mode((screenWidth, screenHeight))
+        showEndRoundScreen(screen, last_decision)
         resetStats()
-

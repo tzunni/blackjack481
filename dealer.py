@@ -1,7 +1,4 @@
 import pygame
-import json
-import random
-import sys
 from pygame.locals import *
 from card_counter import CardCounter
 from deck import Deck

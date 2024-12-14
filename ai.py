@@ -1,3 +1,6 @@
+# This file represents our first version of our AI, which incorporates our dynamic decision algorithm, our hi-lo card counting algorithm, and our minimax with alpha-beta pruning.
+
+
 import csv
 import os
 import pandas as pd
@@ -79,7 +82,7 @@ class AI:
         if player_sum > 21 or depth == 3 or not remaining_cards:
             return self.evaluate_hand(player_hand, dealer_visible_card)
 
-        # Player's turn: Maximize the score
+        # Player's turn
         if is_player_turn:
             max_value = float('-inf')
             best_action = "stand"
@@ -107,7 +110,7 @@ class AI:
 
             return best_action if depth == 0 else max_value
 
-        # Dealer's turn: Minimize the player's score
+        # Dealer's turn
         else:
             min_value = float('inf')
 
@@ -133,7 +136,7 @@ class AI:
 
         # Penalize busting
         if player_sum > 21:
-            return -float('inf')  # Bust: Worst possible score
+            return -float('inf')  # Bust
 
         # Reward standing when the score is close to 21
         score = player_sum
@@ -160,11 +163,6 @@ class AI:
     def flush_buffer_to_csv(self, csv_file):
         """Write all buffered actions to the CSV."""
         try:
-            if not self.action_buffer:
-                print("DEBUG: No actions in buffer to write.")  # Debug statement
-            else:
-                print(f"DEBUG: Writing actions to {csv_file}: {self.action_buffer}")  # Debug statement
-
             with open(csv_file, "a", newline="") as file:
                 writer = csv.writer(file)
                 writer.writerows(self.action_buffer)  # Write from action_buffer

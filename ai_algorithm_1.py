@@ -1,3 +1,6 @@
+# This file represents our first version of our AI, which incorporates our hi-lo card counting algorithm.
+
+
 class AI:
     def __init__(self):
         self.card_counter = None  # Reference to the card counter

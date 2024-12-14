@@ -43,9 +43,6 @@ Additional objectives include:
 The project is organized into the following files and folders:
 
 ### Folders
-- **`Assets/`**  
-  Contains additional assets for the game, such as UI elements and icons.
-
 - **`Resources/`**  
   Stores card resources, including images used during gameplay.
 

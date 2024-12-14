@@ -1,156 +1,139 @@
 # Blackjack Three Layer AI - 481
 
-# Overview:
-  This project is a Python implementation of Blackjack with an interactive interface powered by pygame. Players can compete against two AI agents, each utilizing distinct strategies like Hi-Lo card counting, Minimax decision-making, and historical data analysis.
-  This is our group's implementation of Blackjack with a dealer and an AI that counts cards, written in **Python** using **PyGame**.
+## Overview
+This project is a Python implementation of Blackjack with an interactive interface powered by **PyGame**. Players can compete against two AI agents, each utilizing distinct strategies: **Hi-Lo card counting**, **Minimax decision-making**, and **historical data analysis**. The goal is to develop an intelligent system capable of outperforming the dealer and providing a challenging gameplay experience.
 
-## Group Members:
-- ### Keith Bui
-  - **Games Rules Manager** (Implement the core Blackjack rules)
-  - **Card Counting Specialist** (Implement the Hi-Lo card counting algorithm and maintain a running count)
-- ### Desire Hernandez
-  - **Deck/Card Manager** (Handle deck shuffling, card dealing, and tracking the remaining cards in the deck & special handling for ace values)
-  - **Alpha-Beta Pruning Specialist** (Integrate Alpha-Beta pruning to optimize AI decision-making and improve performance)
-- ### Justin Rodriguez
-  - **Game Flow Coordinator** (Manage the overall game state and ensure proper sequence)
-  - **AI Developer** (Develop the AI agent’s decision-making logic using Minimax/Integrate AI actions with the card counting system)
-- ### Hyndavi Teegala
-  - **User Interface Developer** (Create the frontend interface using PyGame, including the buttons, game status displays, interaction panels and maybe add real time updates with count display)
-  - **AI Integration Lead** (Ensure communication between the AI agent and the game logic, connecting the UI actions to the AI’s responses)
+---
 
-## Goal:
-- Our goal is to create an AI agent that has a competitive advantage over the dealer using card counting. This will be implemented using a form of the Alpha-Beta Minimax algorithm.
-- If we can manage it, we will try to:
-  - Extend the algorithm to work on custom decks, such as incomplete decks and stacked odds decks.
-  - Create multiple players/agents to stress test our algorithm's performance and robustness.
-  - Integrate historical gameplay data to improve decision-making through learning patterns and outcomes.
-  - Add a user-friendly interface that enables players to easily visualize AI decision-making and its reasoning (e.g., highlighting moves based on card counting or Minimax evaluations).
-  - Evaluate the AI's performance using win/loss statistics against other AI versions, the dealer, and human players.
+## Group Members
+
+- **Keith Bui**  
+  - **Games Rules Manager**: Implemented the core Blackjack rules.  
+  - **Card Counting Specialist**: Developed the Hi-Lo card counting algorithm.  
+
+- **Desire Hernandez**  
+  - **Deck/Card Manager**: Managed the deck shuffling, card dealing, and handling ace values.  
+  - **Alpha-Beta Pruning Specialist**: Integrated Alpha-Beta pruning for AI optimization.  
+
+- **Justin Rodriguez**  
+  - **Game Flow Coordinator**: Managed the overall game state and sequence.  
+  - **AI Developer**: Designed AI decision-making logic using Minimax and card counting.  
+
+- **Hyndavi Teegala**  
+  - **User Interface Developer**: Built the user-friendly interface using PyGame.  
+  - **AI Integration Lead**: Connected AI actions with the game logic and user interactions.  
+
+---
+
+## Goal
+Our goal is to create an AI agent with a competitive edge over the dealer, leveraging:
+- **Hi-Lo Card Counting**: Tracking the running and true count for strategic decisions.  
+- **Alpha-Beta Pruning**: Optimizing decision-making with Minimax.  
+- **Historical Data Analysis**: Learning from previous rounds to improve strategy.  
+
+Additional objectives include:
+- Extending functionality for custom decks (e.g., incomplete or stacked odds decks).  
+- Stress testing with multiple players and AI agents.  
+- Evaluating performance through detailed win/loss statistics.  
+- Enhancing the interface for better visualization of AI decisions.  
+
+---
+
+## File Structure
+The project is organized into the following files and folders:
+
+### Folders
+- **`Assets/`**  
+  Contains additional assets for the game, such as UI elements and icons.
+
+- **`Resources/`**  
+  Stores card resources, including images used during gameplay.
+
+---
+
+### Core Files
+- **`main.py`**  
+  The primary entry point for running a single-player game against AI and the dealer.  
+
+- **`2_player_main.py`**  
+  Entry point for a 2-player game (human vs. AI agents).  
+
+- **`3_player_main.py`**  
+  Entry point for a 3-player game with additional AI agents.  
+
+- **`ai.py`**  
+  Implements the main AI logic, combining historical data analysis, Hi-Lo card counting, and the Minimax algorithm.
+
+- **`ai_algorithm_1.py`**  
+  Implements AI Version 1, focusing on basic Hi-Lo card counting.
+
+- **`ai_algorithm_2.py`**  
+  Implements AI Version 2, using the Minimax algorithm for decision-making.
+
+- **`ai_algorithm_3.py`**  
+  Implements AI Version 3, combining all strategies for optimal decision-making.
+
+- **`deck.py`**  
+  Handles deck creation, shuffling, and card dealing.
+
+- **`player.py`**  
+  Represents a player (human or AI), managing actions like hit/stand, hand evaluation, and score tracking.
+
+- **`dealer.py`**  
+  Represents the dealer's logic, adhering to standard Blackjack rules (e.g., hitting until 17).
+
+---
+
+### Supporting Files
+- **`card_counter.py`**  
+  Implements the Hi-Lo card counting system, tracking running and true counts.  
+
+- **`blackjack.py`**  
+  Contains centralized rules and logic specific to Blackjack.  
+
+- **`constants.py`**  
+  Stores constant values like colors, screen dimensions, and game settings.  
+
+- **`shared.py`**  
+  Provides shared classes like `Card` for use across multiple modules.
+
+---
+
+### Data Files
+- **`ai_history.csv`**  
+  Logs AI gameplay data in the format:  
+  `PlayerSum, DealerVisibleCard, Decision, Outcome`  
+  Used to predict optimal actions based on historical rounds.
+
+- **`history.csv`**  
+  Tracks gameplay history (e.g., win/loss outcomes).
+
+- **`cards.txt`**  
+  Stores metadata about the card deck (e.g., suits, ranks).
+
+---
+
+## How to Interact with the Program
+
+### Prerequisites
+1. Install Python 3.x.  
+2. Install required libraries using:
+   ```bash
+   pip install pygame pandas
 
 
-# File Structure:
-  The project is organized into the following files and folders:
+### Running the Program
+Single-Player Game:
+- # To play AI version 1, run:
+  python3 main1.py
+- # To play AI version 2, run:
+  python3 main2.py
+- # To play AI version 3, run:
+  python3 main3.py
 
-  - # Folders
-
-    Assets/:
-    Contains additional assets for the game such as UI elements, card images, or icons.
-
-    Resources/:
-    Stores card resources used during the gameplay.
-    Includes subdirectories for card images, which are rendered during the game.
-
-  - # Core Logic
-    main.py:
-    The primary entry point for running the game.
-    Manages the game loop, user interaction, and integration with AI agents.
-    Launches a single-player Blackjack game against two AI agents and the dealer.
-    
-    multi_main.py:
-    An alternative entry point designed for multiplayer modes.
-    Enables more players (or additional AI agents) to compete simultaneously.
-    
-    multiplayer_main.py:
-    Handles multiplayer-specific logic and UI rendering.
-    
-    constants.py:
-    Stores constant values such as colors, screen dimensions, or game settings for easier customization.
-    Game Components
-    
-    deck.py:
-    Implements the logic for creating, shuffling, and dealing a standard 52-card deck.
-    Uses the Card class from shared.py.
-    
-    player.py:
-    Defines the Player class to represent human and AI players.
-    Manages player actions (hit, stand), hand evaluation, and score tracking.
-    
-    dealer.py:
-    Represents the dealer's actions, hand management, and turn logic.
-    Implements rules like forced hitting until the dealer's count is at least 17.
-    AI Logic
-    
-    ai.py:
-    The main AI implementation.
-    Combines three decision-making strategies:
-    Historical Data Analysis: Predicts optimal actions based on prior rounds.
-    Hi-Lo Card Counting: Adjusts decisions based on the running and true count.
-    Minimax Algorithm: Simulates potential outcomes to choose the best action.
-    
-    ai_algorithm_1.py:
-    Implements the logic for AI Version 1.
-    Focuses on basic Hi-Lo card counting as the primary decision-making strategy.
-    
-    ai_algorithm_2.py:
-    Implements the logic for AI Version 2.
-    Uses the Minimax algorithm to simulate outcomes and improve decision-making.
-    
-  - # Supporting Files
-    card_counter.py:
-    Implements the Hi-Lo card counting system.
-    Tracks the running count of cards and calculates the true count for the AI.
-    
-    blackjack.py:
-    Handles Blackjack-specific rules and logic (e.g., busts, Blackjacks).
-    Centralized for game rules that interact with the Player, Dealer, and AI classes.
-    
-    shared.py:
-    Defines shared classes and utilities like Card for use across multiple modules.
-  - # Data Files
-    ai_history.csv:
-    Stores historical gameplay data in the format:
-    PlayerSum,DealerVisibleCard,Decision,Outcome
-    Used by the AI to predict optimal decisions based on previous rounds.
-   
-    history.csv:
-    Another file for tracking gameplay history (specific use case may vary).
-    
-    cards.txt:
-    Likely contains metadata or card information (e.g., suit, rank, values).
-
-# How to Interact with the Program
-
-  - # Prerequisites
-    Install Python 3+.
-    Install required libraries using:
-    pip install pygame pandas
-
-  - # Running the Program
-    Single-Player Game: Run the main.py file to start a game against the AI:
-    python main.py
-    Use H to "Hit" or S to "Stand" during your turn.
-
-    Multiplayer Game: Run the multi_main.py file for multiplayer functionality:
-    python multi_main.py
-    
-    Alternative Multiplayer Logic: 
-    Use multiplayer_main.py for an enhanced multiplayer experience.
-
-  - # Gameplay Instructions
-    Objective: Beat the dealer by getting a hand value closer to 21 than theirs without going over.
-
-    Players:
-    Human Player: Controlled using keyboard inputs.
-    
-    AI Players:
-    AI Version 1: Relies on Hi-Lo card counting.
-    AI Version 2: Uses Minimax decision-making.
-    Dealer: Plays according to Blackjack rules (e.g., hits until reaching at least 17).
-    
-    End of Round:
-    The program evaluates each player's score and displays the results.
-
-# Code Layout
-  Classes
-  Card (in shared.py): Represents a playing card with attributes like suit, value, and label.
-
-  Deck (in deck.py): Manages the deck, including shuffling and dealing cards.
-
-  Player (in player.py): Represents a human or AI player. Handles gameplay actions and score tracking.
-
-  Dealer (in dealer.py): Represents the dealer's logic and adheres to standard Blackjack rules.
-
-  AI (in ai.py): Implements decision-making strategies using historical data, card counting, and Minimax.
-
-  CardCounter (in card_counter.py): Tracks card counts using the Hi-Lo system.
+Multi-Player Game:
+- # To play against AI version 3, run:
+  python3 2_player_main.py
+- # To play against AI version 3 and AI version 2, run:
+  python3 3_player_main.py
 

@@ -1,8 +1,5 @@
 # This file represents our second version of our AI, which incorporates Minimax with Alpha-Beta Pruning, along with our hi-lo card counting algorithm.
 
-
-from shared import Card
-
 class AI:
     def __init__(self, card_class):
         self.card_class = card_class

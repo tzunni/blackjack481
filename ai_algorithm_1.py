@@ -2,7 +2,7 @@
 
 
 class AI:
-    def __init__(self):
+    def __init__(self, card_class):
         self.card_counter = None  # Reference to the card counter
 
     def set_card_counter(self, card_counter):

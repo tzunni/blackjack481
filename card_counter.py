@@ -13,10 +13,4 @@ class CardCounter:
         self.seen_cards += 1
 
     def get_true_count(self, remaining_cards):
-        """
-        Calculate the true count based on the remaining cards in the deck.
-        """
-        decks_remaining = remaining_cards / 52
-        if decks_remaining > 0:
-            return self.running_count / decks_remaining
-        return self.running_count  # Avoid division by zero
+        return self.running_count 

@@ -1,4 +1,4 @@
-# Blackjack - 481
+# Blackjack Three Layer AI - 481
 
 # Overview:
   This project is a Python implementation of Blackjack with an interactive interface powered by pygame. Players can compete against two AI agents, each utilizing distinct strategies like Hi-Lo card counting, Minimax decision-making, and historical data analysis.

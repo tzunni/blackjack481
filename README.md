@@ -108,7 +108,7 @@
     cards.txt:
     Likely contains metadata or card information (e.g., suit, rank, values).
 
-- # How to Interact with the Program
+# How to Interact with the Program
 
   - # Prerequisites
     Install Python 3+.
@@ -140,7 +140,7 @@
     End of Round:
     The program evaluates each player's score and displays the results.
 
-- # Code Layout
+# Code Layout
   Classes
   Card (in shared.py): Represents a playing card with attributes like suit, value, and label.
 

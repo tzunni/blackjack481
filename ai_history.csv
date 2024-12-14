@@ -2028,3 +2028,11 @@ PlayerSum,DealerCard,Decision,Outcome
 18,5,stand,Win
 15,8,hit,Loss
 18,10,stand,Loss
+14,5,hit,Loss
+9,6,hit,Loss
+16,6,hit,Loss
+13,1,hit,Win
+14,1,hit,Win
+19,1,stand,Win
+11,2,hit,Loss
+16,2,hit,Loss

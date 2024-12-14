@@ -1,26 +1,8 @@
-# Combined main.py
-
-# NOTE: This combined code attempts to merge the functionality of both provided main.py files into one.
-# Since the second snippet imports from external files (ai.py, shared.py, card_counter.py) which were not provided,
-# this code assumes you have those files available or replaces those imports where possible.
-# The first snippet defines its own Card class, while the second snippet imports Card from shared.py.
-# For the sake of completeness, we'll use the Card class from the first snippet and remove the import from shared.py.
-#
-# If you have a 'shared.py' file that defines Card, you may remove the locally defined Card class and re-instate
-# `from shared import Card` as necessary.
-#
-# The AI and CardCounter classes are assumed to be in ai.py and card_counter.py respectively.
-# If you do not have those files, remove or comment out references to AI and CardCounter.
-
-import math
 import random
 import pygame
 from pygame.locals import *
 import sys
 
-# Remove this if you have shared.py and prefer to import from there
-# from shared import Card
-# Using the Card class from the first snippet:
 class Card:
     # this class contains all attributes of a playing card
     def __init__(self, suit, color, label, value):
@@ -506,7 +488,7 @@ def showEndRoundScreen(surface, last_decision):
 
     pygame.init()
     pygame.display.set_caption("Round Over")
-    surface.fill(black)
+    surface.fill(green)
 
     # Reveal dealer hand first
     dealerBust = revealDealerHand(surface)
@@ -540,10 +522,13 @@ def showEndRoundScreen(surface, last_decision):
     ai_instance.update_outcome_in_buffer(outcome)
     ai_instance.flush_buffer_to_csv(ai_instance.history_file if hasattr(ai_instance, 'history_file') else "history.csv")
 
-    add_text("Results:", text_SubHeading, surface, halfWidth, 300, orange)
-    add_text(f"Outcome: {outcome}", text_Normal, surface, halfWidth, 350, white)
-    add_text(score_text, text_SubHeading, surface, halfWidth, 400, white)
-    add_text("Press 'D' to DEAL or Press 'Q' to QUIT", text_SubHeading, surface, halfWidth, 500, orange)
+    # Starting Y position
+    y_start = 300
+    line_spacing = 50  # Adjust spacing between lines
+
+    add_text("Results:", text_SubHeading, surface, halfWidth, y_start, orange)
+    add_text(score_text, text_SubHeading, surface, halfWidth, y_start + 2 * line_spacing, white)
+    add_text("Press 'D' to DEAL or Press 'Q' to QUIT", text_SubHeading, surface, halfWidth, y_start + 3 * line_spacing, orange)
     pygame.display.update()
 
     while True:
